@@ -1,5 +1,6 @@
 import { login } from "./actions";
 import { ActivationModal } from "./activation-modal";
+import { ActivationToast } from "./activation-toast";
 
 export default async function LoginPage({
   searchParams,
@@ -39,6 +40,10 @@ export default async function LoginPage({
       </section>
 
       <ActivationModal error={activation_error} message={activation_message} />
+      <ActivationToast
+        type={activation_error ? "error" : activation_message ? "success" : undefined}
+        message={activation_error || activation_message}
+      />
     </main>
   );
 }
