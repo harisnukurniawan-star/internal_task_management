@@ -14,9 +14,9 @@ export async function login(formData: FormData) {
 }
 
 export async function requestActivation(formData: FormData) {
-  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const email = String(formData.get("activation_email") || "").trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    redirect(`/login?error=${encodeURIComponent("Isi email yang valid untuk aktivasi akun.")}`);
+    redirect(`/login?activation_error=${encodeURIComponent("Isi email tujuan aktivasi yang valid.")}#activation`);
   }
 
   const requestHeaders = await headers();
@@ -37,7 +37,7 @@ export async function requestActivation(formData: FormData) {
   }
 
   if (!origin) {
-    redirect(`/login?error=${encodeURIComponent("Alamat aplikasi tidak dapat ditentukan. Hubungi administrator.")}`);
+    redirect(`/login?activation_error=${encodeURIComponent("Alamat aplikasi tidak dapat ditentukan. Hubungi administrator.")}#activation`);
   }
 
   const supabase = await createClient();
@@ -46,10 +46,10 @@ export async function requestActivation(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent("Link aktivasi gagal dikirim. Coba lagi atau hubungi administrator.")}`);
+    redirect(`/login?activation_error=${encodeURIComponent("Link aktivasi gagal dikirim. Coba lagi atau hubungi administrator.")}#activation`);
   }
 
-  redirect(`/login?message=${encodeURIComponent("Jika email terdaftar, link aktivasi untuk membuat password sudah dikirim.")}`);
+  redirect(`/login?activation_message=${encodeURIComponent("Jika email terdaftar, link aktivasi / pembuatan password sudah dikirim ke email tujuan.")}#activation`);
 }
 
 export async function logout() {
