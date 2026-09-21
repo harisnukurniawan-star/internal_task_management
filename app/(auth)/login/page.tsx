@@ -35,8 +35,13 @@ export default async function LoginPage({
         </form>
 
         <div className="login-divider"><span>atau</span></div>
-        <a className="btn secondary activation-trigger" href="#activation">Aktivasi akun / Buat password</a>
-        <p className="muted small activation-help">Klik tombol di atas untuk membuka form khusus pengiriman link aktivasi. Email aktivasi diisi terpisah dari email login.</p>
+        <a className="btn secondary activation-trigger" href="/guest">Masuk sebagai Guest</a>
+        <p className="muted small activation-help">Buka preview aplikasi dalam mode read-only tanpa login dan tanpa akses data privat.</p>
+
+        <div className="section-sm">
+          <a className="btn secondary activation-trigger" href="#activation">Aktivasi akun / Buat password</a>
+          <p className="muted small activation-help">Kirim link aktivasi ke email tujuan yang diisi di form khusus.</p>
+        </div>
       </section>
 
       <ActivationModal error={activation_error} message={activation_message} />
