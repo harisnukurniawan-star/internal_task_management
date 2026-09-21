@@ -12,24 +12,49 @@ function normalizeOrigin(value: string | undefined | null) {
   }
 }
 
+function isLocalOrigin(origin: string | null) {
+  if (!origin) return false;
+  try {
+    const hostname = new URL(origin).hostname;
+    return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+  } catch {
+    return false;
+  }
+}
+
+function isProductionRuntime() {
+  if (process.env.VERCEL) {
+    return process.env.VERCEL_ENV === "production";
+  }
+  return process.env.NODE_ENV === "production";
+}
+
+function usableOrigin(origin: string | null, production: boolean) {
+  if (!origin) return null;
+  if (production && isLocalOrigin(origin)) return null;
+  return origin;
+}
+
 export async function getAppOrigin() {
-  const configured = normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL);
+  const production = isProductionRuntime();
+
+  const configured = usableOrigin(normalizeOrigin(process.env.NEXT_PUBLIC_SITE_URL), production);
   if (configured) return configured;
 
-  const productionUrl = normalizeOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL);
+  const productionUrl = usableOrigin(normalizeOrigin(process.env.VERCEL_PROJECT_PRODUCTION_URL), production);
   if (productionUrl) return productionUrl;
 
-  const vercelUrl = normalizeOrigin(process.env.VERCEL_URL);
+  const vercelUrl = usableOrigin(normalizeOrigin(process.env.VERCEL_URL), production);
   if (vercelUrl) return vercelUrl;
 
   const requestHeaders = await headers();
-  const requestOrigin = normalizeOrigin(requestHeaders.get("origin"));
+  const requestOrigin = usableOrigin(normalizeOrigin(requestHeaders.get("origin")), production);
   if (requestOrigin) return requestOrigin;
 
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const proto = requestHeaders.get("x-forwarded-proto") ?? (host?.includes("localhost") ? "http" : "https");
-  const forwardedOrigin = host ? normalizeOrigin(`${proto}://${host}`) : null;
+  const forwardedOrigin = usableOrigin(host ? normalizeOrigin(`${proto}://${host}`) : null, production);
   if (forwardedOrigin) return forwardedOrigin;
 
-  throw new Error("Application URL could not be resolved.");
+  throw new Error("Application URL could not be resolved safely.");
 }
