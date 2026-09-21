@@ -2,8 +2,10 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
+const ALLOWED_AUTH_DESTINATIONS = new Set(["/activate", "/reset-password"]);
+
 function safeNext(value: string | null) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/activate";
+  if (!value || !ALLOWED_AUTH_DESTINATIONS.has(value)) return "/reset-password";
   return value;
 }
 
@@ -32,7 +34,11 @@ export async function GET(request: NextRequest) {
     if (!error) return NextResponse.redirect(redirectTo);
   }
 
+  const message = next === "/activate"
+    ? "Link aktivasi tidak valid atau sudah kedaluwarsa."
+    : "Link reset password tidak valid atau sudah kedaluwarsa. Silakan kirim ulang link reset password.";
+
   return NextResponse.redirect(
-    new URL(`/login?error=${encodeURIComponent("Link aktivasi tidak valid atau sudah kedaluwarsa.")}`, request.url),
+    new URL(`/login?error=${encodeURIComponent(message)}`, request.url),
   );
 }
