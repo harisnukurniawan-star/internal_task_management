@@ -31,6 +31,9 @@ export default async function LoginPage({
             <label>Password</label>
             <input name="password" type="password" required autoComplete="current-password" />
           </div>
+          <p className="muted small" style={{ textAlign: "right", margin: "-4px 0 2px" }}>
+            <a href="/forgot-password">Lupa password?</a>
+          </p>
           <button className="btn" type="submit">Masuk</button>
         </form>
 
@@ -40,7 +43,7 @@ export default async function LoginPage({
 
         <div className="section-sm">
           <a className="btn secondary activation-trigger" href="#activation">Aktivasi akun / Buat password</a>
-          <p className="muted small activation-help">Kirim link aktivasi ke email tujuan yang diisi di form khusus.</p>
+          <p className="muted small activation-help">Khusus akun baru yang sudah didaftarkan administrator dan belum membuat password.</p>
         </div>
       </section>
 
