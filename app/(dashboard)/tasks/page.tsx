@@ -12,7 +12,7 @@ export default async function TasksPage({
 }) {
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
-  if (profile.role !== "supervisor") return <p>Unauthorized</p>;
+  if (!["admin", "supervisor"].includes(profile.role)) return <p>Unauthorized</p>;
 
   const period = await getCurrentPeriod();
   const employeeResult = await supabase

@@ -11,7 +11,7 @@ export default async function ReviewsPage({
 }) {
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
-  if (profile.role !== "supervisor") return <p>Unauthorized</p>;
+  if (!["admin", "supervisor"].includes(profile.role)) return <p>Unauthorized</p>;
 
   const { data: claimRows } = await supabase
     .from("task_claims")

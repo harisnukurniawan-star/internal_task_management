@@ -21,7 +21,7 @@ function jump(path: string, type: "ok" | "error" | "warning", message: string): 
 
 export async function createTask(formData: FormData) {
   const { supabase, profile } = await requireProfile();
-  if (profile.role !== "supervisor") jump("/dashboard", "error", "Akses Supervisor diperlukan.");
+  if (!["admin", "supervisor"].includes(profile.role)) jump("/dashboard", "error", "Akses Supervisor diperlukan.");
 
   const periodId = String(formData.get("period_id") || "").trim();
   const assignedTo = String(formData.get("assigned_to") || "").trim();
@@ -178,7 +178,7 @@ export async function submitClaim(formData: FormData) {
 
 export async function evaluateClaim(formData: FormData) {
   const { supabase, profile } = await requireProfile();
-  if (profile.role !== "supervisor") jump("/dashboard", "error", "Akses Supervisor diperlukan.");
+  if (!["admin", "supervisor"].includes(profile.role)) jump("/dashboard", "error", "Akses Supervisor diperlukan.");
 
   const claimId = String(formData.get("claim_id") || "").trim();
   const decision = String(formData.get("decision") || "").trim();
