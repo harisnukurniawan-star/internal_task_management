@@ -1,8 +1,8 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getAppOrigin } from "@/lib/site-url";
 
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
@@ -19,24 +19,10 @@ export async function requestActivation(formData: FormData) {
     redirect(`/login?activation_error=${encodeURIComponent("Isi email tujuan aktivasi yang valid.")}#activation`);
   }
 
-  const requestHeaders = await headers();
-  const rawOrigin = requestHeaders.get("origin");
-  let origin = "";
-
-  if (rawOrigin) {
-    try {
-      const parsed = new URL(rawOrigin);
-      if (parsed.protocol === "https:" || parsed.protocol === "http:") origin = parsed.origin;
-    } catch {}
-  }
-
-  if (!origin) {
-    const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-    const proto = requestHeaders.get("x-forwarded-proto") ?? (host?.includes("localhost") ? "http" : "https");
-    if (host) origin = `${proto}://${host}`;
-  }
-
-  if (!origin) {
+  let origin: string;
+  try {
+    origin = await getAppOrigin();
+  } catch {
     redirect(`/login?activation_error=${encodeURIComponent("Alamat aplikasi tidak dapat ditentukan. Hubungi administrator.")}#activation`);
   }
 
