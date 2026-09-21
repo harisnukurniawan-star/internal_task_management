@@ -18,7 +18,7 @@ export default async function ResetPasswordPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name,active")
+    .select("active")
     .eq("id", userId)
     .maybeSingle();
 
@@ -27,14 +27,10 @@ export default async function ResetPasswordPage({
     redirect(`/login?error=${encodeURIComponent("Akun belum aktif. Hubungi administrator atau gunakan menu Aktivasi Akun.")}`);
   }
 
-  const email = typeof claimsData?.claims?.email === "string" ? claimsData.claims.email : "";
-
   return (
     <main className="login">
       <section className="login-card">
         <h1>Reset Password</h1>
-        <p className="muted">{profile.full_name}{email ? ` · ${email}` : ""}</p>
-        <p>Buat password baru untuk akun Anda.</p>
         {error ? <p className="notice error">{error}</p> : null}
 
         <form action={resetPassword} className="form section">
@@ -43,10 +39,10 @@ export default async function ResetPasswordPage({
             <input name="password" type="password" minLength={8} required autoComplete="new-password" />
           </div>
           <div className="field">
-            <label>Konfirmasi password</label>
+            <label>Konfirmasi password baru</label>
             <input name="password_confirmation" type="password" minLength={8} required autoComplete="new-password" />
           </div>
-          <button className="btn" type="submit">Simpan Password Baru</button>
+          <button className="btn" type="submit">Set Password</button>
         </form>
       </section>
     </main>
