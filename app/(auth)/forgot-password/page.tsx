@@ -11,14 +11,14 @@ export default async function ForgotPasswordPage({
     <main className="login">
       <section className="login-card">
         <h1>Lupa Password</h1>
-        <p className="muted">Masukkan username akun. Link reset password akan dikirim ke email recovery yang tersimpan di sistem.</p>
+        <p className="muted">Masukkan email akun Internal Task Management. Kami akan mengirim link untuk membuat password baru.</p>
         {error ? <p className="notice error">{error}</p> : null}
         {message ? <p className="notice ok">{message}</p> : null}
 
         <form action={requestPasswordReset} className="form section">
           <div className="field">
-            <label>Username</label>
-            <input name="username" type="text" required autoComplete="username" placeholder="contoh: heri" />
+            <label>Email akun</label>
+            <input name="email" type="email" required autoComplete="email" />
           </div>
           <button className="btn" type="submit">Kirim Link Reset Password</button>
         </form>
