@@ -43,7 +43,7 @@ export default async function LoginPage({
 
         <div className="section-sm">
           <a className="btn secondary activation-trigger" href="#activation">Aktivasi akun / Buat password</a>
-          <p className="muted small activation-help">Aktivasi cukup dengan username dan password. Email recovery dan role mengikuti data administrator.</p>
+          <p className="muted small activation-help">Masukkan username untuk menerima link aktivasi di Gmail terdaftar. Password dibuat setelah link email dibuka.</p>
         </div>
       </section>
 
