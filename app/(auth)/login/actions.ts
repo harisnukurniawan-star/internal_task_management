@@ -8,43 +8,30 @@ function activationError(message: string): never {
   redirect(`/login?activation_error=${encodeURIComponent(message)}#activation`);
 }
 
-function normalizeIdentifier(value: FormDataEntryValue | null) {
+function normalizeUsername(value: FormDataEntryValue | null) {
   return String(value || "").trim().toLowerCase();
 }
 
 export async function login(formData: FormData) {
-  const identifier = normalizeIdentifier(formData.get("username"));
+  const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
-  const validUsername = /^[a-z0-9._-]{3,40}$/.test(identifier);
-  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier);
 
-  if ((!validUsername && !validEmail) || !password) {
-    redirect(`/login?error=${encodeURIComponent("Username/email atau password salah.")}`);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !password) {
+    redirect(`/login?error=${encodeURIComponent("Email atau password salah.")}`);
   }
 
   const supabase = await createClient();
-  const { data: email, error: resolveError } = await supabase.rpc("resolve_auth_email", {
-    p_username: identifier,
-  });
-
-  if (resolveError || !email) {
-    redirect(`/login?error=${encodeURIComponent("Username/email atau password salah.")}`);
-  }
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email: String(email),
-    password,
-  });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent("Username/email atau password salah.")}`);
+    redirect(`/login?error=${encodeURIComponent("Email atau password salah.")}`);
   }
 
   redirect("/dashboard");
 }
 
 export async function requestActivation(formData: FormData) {
-  const username = normalizeIdentifier(formData.get("activation_username"));
+  const username = normalizeUsername(formData.get("activation_username"));
   const password = String(formData.get("activation_password") || "");
   const confirmation = String(formData.get("activation_password_confirmation") || "");
 
