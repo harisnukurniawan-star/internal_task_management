@@ -71,31 +71,40 @@ export function ActivationForm() {
         throw new Error("Data aktivasi tidak dapat diverifikasi.");
       }
 
-      const isNewAuthUser = identity.binding_status !== "resend";
-      const { error: emailError } = await supabase.auth.signInWithOtp({
-        email: identity.email,
-        options: isNewAuthUser
-          ? {
-              shouldCreateUser: true,
-              emailRedirectTo: PRODUCTION_ACTIVATION_CALLBACK,
-              data: {
-                activation_slot: identity.slot_key,
-                activation_grant: signupGrant,
-                activation_mode: "email_link",
-              },
-            }
-          : {
-              shouldCreateUser: false,
-              emailRedirectTo: PRODUCTION_ACTIVATION_CALLBACK,
-            },
-      });
+      if (identity.binding_status === "resend") {
+        // Auth user sudah ada tetapi aktivasi aplikasi belum selesai.
+        // Gunakan recovery link agar alurnya sama dengan Reset Password:
+        // email -> callback -> set password -> complete_email_activation().
+        const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(
+          identity.email,
+          { redirectTo: PRODUCTION_ACTIVATION_CALLBACK },
+        );
 
-      if (emailError) {
-        throw new Error(emailError.message || "Link aktivasi gagal dikirim.");
+        if (recoveryError) {
+          throw new Error(recoveryError.message || "Link aktivasi ulang gagal dikirim.");
+        }
+      } else {
+        // First activation: buat Auth user melalui email ownership verification.
+        const { error: emailError } = await supabase.auth.signInWithOtp({
+          email: identity.email,
+          options: {
+            shouldCreateUser: true,
+            emailRedirectTo: PRODUCTION_ACTIVATION_CALLBACK,
+            data: {
+              activation_slot: identity.slot_key,
+              activation_grant: signupGrant,
+              activation_mode: "email_link",
+            },
+          },
+        });
+
+        if (emailError) {
+          throw new Error(emailError.message || "Link aktivasi gagal dikirim.");
+        }
       }
 
       setMessage(
-        "Link aktivasi sudah dikirim. Link dapat dibuka dari browser atau perangkat mana pun. Buka email terbaru lalu buat password.",
+        "Link aktivasi terbaru sudah dikirim. Gunakan hanya email yang paling baru; link sebelumnya otomatis tidak berlaku. Setelah link dibuka, buat password untuk menyelesaikan aktivasi.",
       );
       form.reset();
     } catch (caught) {
