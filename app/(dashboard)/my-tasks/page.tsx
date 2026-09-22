@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { requireProfile } from "@/lib/auth";
 import { getCurrentPeriod, getEmployeeForProfile } from "@/lib/data";
+import { complexityLabel, qualityLabel } from "@/lib/scoring";
 import { submitClaim } from "../actions";
 
 export default async function MyTasksPage({
@@ -18,7 +19,7 @@ export default async function MyTasksPage({
 
   let taskQuery = supabase
     .from("tasks")
-    .select("id,title,description,status,priority,due_at")
+    .select("id,title,description,status,priority,complexity,due_at")
     .eq("assigned_to", employee.id);
   if (period) taskQuery = taskQuery.eq("period_id", period.id);
   const { data: taskRows } = await taskQuery.order("created_at", { ascending: false });
@@ -29,7 +30,7 @@ export default async function MyTasksPage({
   if (taskIds.length > 0) {
     const { data: claimRows } = await supabase
       .from("task_claims")
-      .select("id,task_id,version,realization_summary,completion_percent,submitted_at,task_evaluations(decision,score,feedback,evaluated_at),evidence_files(file_name,file_size,storage_path)")
+      .select("id,task_id,version,realization_summary,submitted_at,task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name,file_size,storage_path)")
       .in("task_id", taskIds)
       .order("version", { ascending: false });
     for (const claim of claimRows ?? []) {
@@ -66,14 +67,15 @@ export default async function MyTasksPage({
               <p className="muted clamp">{task.description || "Tanpa deskripsi"}</p>
               <div className="task-meta">
                 <span>Priority: {task.priority}</span>
-                <span>Due: {task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</span>
+                <span>Kompleksitas: {complexityLabel(task.complexity)}</span>
+                <span>Due: {task.due_at ? new Date(task.due_at).toLocaleString("id-ID") : "-"}</span>
               </div>
 
               {claim ? (
                 <div className="submission-box">
                   <div className="task-meta">
                     <span>Submission v{claim.version}</span>
-                    <span>{claim.completion_percent}% selesai</span>
+                    <span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span>
                   </div>
                   <p>{claim.realization_summary}</p>
                   {evidenceLinks.get(claim.id) ? (
@@ -81,16 +83,21 @@ export default async function MyTasksPage({
                       Buka evidence
                     </a>
                   ) : (
-                    <span className="muted small">Tanpa evidence file</span>
+                    <span className="muted small">Belum ada evidence · Completion = 0</span>
                   )}
                   {evaluation ? (
                     <div className={`feedback ${evaluation.decision}`}>
                       <strong>{evaluation.decision === "revision" ? "Perlu revisi" : evaluation.decision}</strong>
-                      {evaluation.score !== null ? <span>Score: {evaluation.score}</span> : null}
+                      <span>Quality: {qualityLabel(evaluation.quality)}</span>
+                      <span>Kompleksitas: {Number(evaluation.complexity_score).toFixed(1)}</span>
+                      <span>Ketepatan waktu: {Number(evaluation.timeliness_score).toFixed(1)}</span>
+                      <span>Quality score: {Number(evaluation.quality_score).toFixed(1)}</span>
+                      <span>Completion: {Number(evaluation.completion_score).toFixed(1)}</span>
+                      <span><strong>Skor aktivitas: {Number(evaluation.score).toFixed(2)}</strong></span>
                       {evaluation.feedback ? <p>{evaluation.feedback}</p> : null}
                     </div>
                   ) : task.status === "submitted" ? (
-                    <div className="notice neutral">Menunggu review Supervisor.</div>
+                    <div className="notice neutral">Menunggu review Supervisor untuk penilaian Quality dan skor final.</div>
                   ) : null}
                 </div>
               ) : null}
@@ -102,16 +109,10 @@ export default async function MyTasksPage({
                     <label>{task.status === "revision" ? "Realisasi revisi" : "Realisasi"}</label>
                     <textarea name="realization_summary" required maxLength={2000} />
                   </div>
-                  <div className="form-row">
-                    <div className="field">
-                      <label>Completion %</label>
-                      <input name="completion_percent" type="number" min="0" max="100" step="1" defaultValue="100" />
-                    </div>
-                    <div className="field">
-                      <label>Evidence · opsional</label>
-                      <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                      <small className="muted">1 file · maks. 3 MB</small>
-                    </div>
+                  <div className="field">
+                    <label>Upload evidence</label>
+                    <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                    <small className="muted">PDF/JPG/PNG/WebP · maks. 3 MB. Evidence ada = Completion 100, tanpa evidence = 0.</small>
                   </div>
                   <button className="btn" type="submit">
                     {task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}
