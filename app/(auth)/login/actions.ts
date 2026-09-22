@@ -27,7 +27,6 @@ export async function login(formData: FormData) {
 export async function requestActivation(formData: FormData) {
   const userKey = String(formData.get("activation_user") || "").trim();
   const email = String(formData.get("activation_email") || "").trim().toLowerCase();
-  const activationCode = String(formData.get("activation_code") || "").trim();
   const password = String(formData.get("activation_password") || "");
   const confirmation = String(formData.get("activation_password_confirmation") || "");
 
@@ -36,9 +35,6 @@ export async function requestActivation(formData: FormData) {
   }
   if (!/^[a-z0-9._%+\-]+@gmail\.com$/.test(email)) {
     activationError("Aktivasi hanya menerima alamat @gmail.com.");
-  }
-  if (!activationCode) {
-    activationError("Kode aktivasi wajib diisi.");
   }
   if (password.length < 8) {
     activationError("Password minimal 8 karakter.");
@@ -53,7 +49,6 @@ export async function requestActivation(formData: FormData) {
   const { data: binding, error: bindingError } = await supabase.rpc("claim_activation_slot", {
     p_slot_key: userKey,
     p_email: email,
-    p_activation_code: activationCode,
     p_signup_grant: signupGrant,
   });
 
@@ -96,7 +91,7 @@ export async function requestActivation(formData: FormData) {
   if (!data.session) {
     const signIn = await supabase.auth.signInWithPassword({ email, password });
     if (signIn.error) {
-      activationError("Akun dibuat tetapi Supabase masih mewajibkan konfirmasi email. Matikan Confirm email lalu hubungi Admin sebelum mencoba lagi.");
+      activationError("Akun dibuat tetapi Supabase masih mewajibkan konfirmasi email. Matikan Confirm email lalu coba login kembali.");
     }
   }
 
