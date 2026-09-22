@@ -1,12 +1,5 @@
 import { requestActivation } from "./actions";
 
-const USERS = [
-  { value: "system_admin", label: "Admin · hcconnectpln@gmail.com" },
-  { value: "endang_mirah_ayu", label: "Endang Mirah Ayu · Employee" },
-  { value: "citra_aries", label: "Citra Aries · Employee" },
-  { value: "heri_syamsudin", label: "Heri Syamsudin · Employee · hery.syam@gmail.com" },
-];
-
 export function ActivationModal({ error, message }: { error?: string; message?: string }) {
   return (
     <div id="activation" className="activation-modal" role="dialog" aria-modal="true" aria-labelledby="activation-title">
@@ -15,43 +8,28 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
         <div className="activation-head">
           <div>
             <h2 id="activation-title">Aktivasi akun</h2>
-            <p className="muted small">Pilih user, isi Gmail, lalu buat password.</p>
+            <p className="muted small">Masukkan username yang diberikan administrator, lalu buat password.</p>
           </div>
           <a className="activation-close" href="#" aria-label="Tutup">×</a>
         </div>
-
-        <p className="notice warning">
-          Admin dan Heri memakai Gmail yang sudah ditetapkan. Endang dan Citra akan terikat ke Gmail pertama yang berhasil diaktifkan.
-        </p>
 
         {error ? <p className="notice error">{error}</p> : null}
         {message ? <p className="notice ok">{message}</p> : null}
 
         <form action={requestActivation} className="form section-sm">
           <div className="field">
-            <label>Nama user</label>
-            <select name="activation_user" required defaultValue="">
-              <option value="" disabled>Pilih user</option>
-              {USERS.map((user) => (
-                <option key={user.value} value={user.value}>{user.label}</option>
-              ))}
-            </select>
-            <small className="muted">Harisnu Kurniawan · Supervisor · sudah aktif.</small>
-          </div>
-
-          <div className="field">
-            <label>Gmail untuk login</label>
+            <label>Username</label>
             <input
-              name="activation_email"
-              type="email"
+              name="activation_username"
+              type="text"
               required
-              autoComplete="email"
-              inputMode="email"
-              placeholder="nama@gmail.com"
-              pattern="[A-Za-z0-9._%+\-]+@gmail\.com"
-              title="Gunakan alamat Gmail dengan akhiran @gmail.com"
+              autoComplete="username"
+              inputMode="text"
+              placeholder="contoh: heri"
+              pattern="[a-zA-Z0-9._-]{3,40}"
+              title="Gunakan username yang diberikan administrator"
             />
-            <small className="muted">Satu Gmail hanya dapat terikat ke satu user.</small>
+            <small className="muted">Email recovery dan role diambil otomatis dari data user di sistem.</small>
           </div>
 
           <div className="field">
