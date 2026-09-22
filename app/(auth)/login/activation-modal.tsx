@@ -1,7 +1,8 @@
 import { requestActivation } from "./actions";
 
 const USERS = [
-  { value: "harisnu_kurniawan", label: "Harisnu Kurniawan · Admin / Supervisor" },
+  { value: "system_admin", label: "Admin · hcconnectpln@gmail.com" },
+  { value: "harisnu_kurniawan", label: "Harisnu Kurniawan · Supervisor" },
   { value: "endang_mirah_ayu", label: "Endang Mirah Ayu · Employee" },
   { value: "citra_aries", label: "Citra Aries · Employee" },
   { value: "heri_syamsudin", label: "Heri Syamsudin · Employee" },
@@ -15,13 +16,13 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
         <div className="activation-head">
           <div>
             <h2 id="activation-title">Aktivasi akun</h2>
-            <p className="muted small">Pilih nama user, lalu daftarkan Gmail yang akan dipakai untuk login.</p>
+            <p className="muted small">Pilih nama user, lalu gunakan Gmail yang sudah ditetapkan atau Gmail pertama untuk user yang belum terikat.</p>
           </div>
           <a className="activation-close" href="#" aria-label="Tutup">×</a>
         </div>
 
         <p className="notice warning">
-          <strong>First Gmail binding:</strong> Gmail pertama yang berhasil didaftarkan akan dikunci ke user tersebut. Aktivasi berikutnya harus memakai Gmail yang sama.
+          <strong>First Gmail binding:</strong> Admin sudah dikunci ke hcconnectpln@gmail.com dan Harisnu Kurniawan ke harisnu@gmail.com. Untuk Employee, Gmail pertama yang berhasil didaftarkan akan dikunci ke user tersebut.
         </p>
 
         {error ? <p className="notice error">{error}</p> : null}
@@ -49,7 +50,7 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
               pattern="[A-Za-z0-9._%+\-]+@gmail\.com"
               title="Gunakan alamat Gmail dengan akhiran @gmail.com"
             />
-            <small className="muted">Hanya alamat @gmail.com. Satu Gmail hanya dapat terikat ke satu user.</small>
+            <small className="muted">Satu Gmail hanya dapat terikat ke satu user.</small>
           </div>
           <button className="btn" type="submit">Daftarkan Gmail & Kirim Link</button>
           <a className="btn secondary activation-cancel" href="#">Batal</a>
