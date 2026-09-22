@@ -1,4 +1,5 @@
 import { setPassword } from "./actions";
+import { RecoverySessionBridge } from "./recovery-session-bridge";
 
 export default async function SetPasswordPage({
   searchParams,
@@ -10,6 +11,7 @@ export default async function SetPasswordPage({
   return (
     <main className="login">
       <section className="login-card">
+        <RecoverySessionBridge />
         {error ? <p className="notice error">{error}</p> : null}
         <form action={setPassword} className="form section">
           <div className="field">
