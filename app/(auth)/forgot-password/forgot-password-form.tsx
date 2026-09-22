@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createEmailLinkClient } from "@/lib/supabase/email-link-client";
 
 const PRODUCTION_RESET_CALLBACK =
   "https://internaltaskmanagement.vercel.app/auth/confirm?next=/set-password";
@@ -25,7 +25,7 @@ export function ForgotPasswordForm() {
     }
 
     setLoading(true);
-    const supabase = createClient();
+    const supabase = createEmailLinkClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: PRODUCTION_RESET_CALLBACK,
     });
@@ -36,7 +36,9 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    setMessage("Jika email sudah memiliki akun aktif, link reset password sudah dikirim. Jika belum pernah aktivasi, gunakan menu Aktivasi akun / Buat password di halaman login.");
+    setMessage(
+      "Jika email memiliki akun aktif, link reset password sudah dikirim. Link dapat dibuka dari browser atau perangkat mana pun. Jika belum pernah aktivasi, gunakan menu Aktivasi Akun.",
+    );
   }
 
   return (
