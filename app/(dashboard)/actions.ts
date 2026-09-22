@@ -3,9 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
+import { COMPLEXITY_OPTIONS, QUALITY_OPTIONS } from "@/lib/scoring";
 
 const ALLOWED_PRIORITIES = new Set(["low", "medium", "high", "critical"]);
 const ALLOWED_DECISIONS = new Set(["approved", "revision", "rejected"]);
+const ALLOWED_COMPLEXITIES = new Set<string>(COMPLEXITY_OPTIONS.map((item) => item.value));
+const ALLOWED_QUALITIES = new Set<string>(QUALITY_OPTIONS.map((item) => item.value));
 const ALLOWED_EVIDENCE_TYPES = new Set([
   "application/pdf",
   "image/jpeg",
@@ -28,16 +31,14 @@ export async function createTask(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const priority = String(formData.get("priority") || "medium").trim();
-  const weight = Number(formData.get("weight") || 1);
+  const complexity = String(formData.get("complexity") || "administrasi").trim();
   const dueDate = String(formData.get("due_date") || "").trim();
 
   if (!periodId || !assignedTo || title.length < 3) {
     jump("/tasks", "error", "Periode, pegawai, dan judul task wajib diisi.");
   }
   if (!ALLOWED_PRIORITIES.has(priority)) jump("/tasks", "error", "Priority tidak valid.");
-  if (!Number.isFinite(weight) || weight <= 0 || weight > 100) {
-    jump("/tasks", "error", "Weight harus lebih dari 0 dan maksimal 100.");
-  }
+  if (!ALLOWED_COMPLEXITIES.has(complexity)) jump("/tasks", "error", "Kompleksitas tidak valid.");
 
   const [periodResult, employeeResult] = await Promise.all([
     supabase.from("weekly_periods").select("id,status").eq("id", periodId).maybeSingle(),
@@ -62,7 +63,7 @@ export async function createTask(formData: FormData) {
     title,
     description,
     priority,
-    weight,
+    complexity,
     due_at: dueAt,
   });
   if (error) jump("/tasks", "error", "Task gagal disimpan.");
@@ -87,15 +88,11 @@ export async function submitClaim(formData: FormData) {
 
   const taskId = String(formData.get("task_id") || "").trim();
   const summary = String(formData.get("realization_summary") || "").trim();
-  const completion = Number(formData.get("completion_percent") || 100);
   const fileValue = formData.get("evidence");
   const evidence = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
 
   if (!taskId || summary.length < 3) {
     jump("/my-tasks", "error", "Realisasi wajib diisi.");
-  }
-  if (!Number.isInteger(completion) || completion < 0 || completion > 100) {
-    jump("/my-tasks", "error", "Completion harus 0 sampai 100.");
   }
 
   const { data: task } = await supabase
@@ -133,7 +130,7 @@ export async function submitClaim(formData: FormData) {
       task_id: taskId,
       employee_id: employee.id,
       realization_summary: summary,
-      completion_percent: completion,
+      completion_percent: evidence ? 100 : 0,
       version,
     })
     .select("id")
@@ -150,7 +147,7 @@ export async function submitClaim(formData: FormData) {
     });
 
     if (upload.error) {
-      warning = "Realisasi tersimpan, tetapi evidence gagal diunggah.";
+      warning = "Realisasi tersimpan, tetapi evidence gagal diunggah. Completion akan bernilai 0 sampai evidence tersedia.";
     } else {
       const meta = await supabase.from("evidence_files").insert({
         claim_id: claim.id,
@@ -161,7 +158,7 @@ export async function submitClaim(formData: FormData) {
       });
       if (meta.error) {
         await supabase.storage.from("task-evidence").remove([path]);
-        warning = "Realisasi tersimpan, tetapi metadata evidence gagal disimpan.";
+        warning = "Realisasi tersimpan, tetapi metadata evidence gagal disimpan. Completion akan bernilai 0.";
       }
     }
   }
@@ -182,22 +179,14 @@ export async function evaluateClaim(formData: FormData) {
 
   const claimId = String(formData.get("claim_id") || "").trim();
   const decision = String(formData.get("decision") || "").trim();
-  const scoreRaw = String(formData.get("score") || "").trim();
+  const quality = String(formData.get("quality") || "").trim();
   const feedback = String(formData.get("feedback") || "").trim() || null;
 
   if (!claimId || !ALLOWED_DECISIONS.has(decision)) {
     jump("/reviews", "error", "Submission atau keputusan tidak valid.");
   }
-
-  let score: number | null = null;
-  if (scoreRaw !== "") {
-    score = Number(scoreRaw);
-    if (!Number.isFinite(score) || score < 0 || score > 100) {
-      jump("/reviews", "error", "Score harus 0 sampai 100.");
-    }
-  }
-  if (decision === "approved" && score === null) {
-    jump("/reviews", "error", "Score wajib diisi untuk approval.");
+  if (!ALLOWED_QUALITIES.has(quality)) {
+    jump("/reviews", "error", "Penilaian Quality tidak valid.");
   }
 
   const { data: claim } = await supabase
@@ -217,23 +206,23 @@ export async function evaluateClaim(formData: FormData) {
     jump("/reviews", "error", "Submission ini bukan versi terbaru.");
   }
 
-  const { error } = await supabase.from("task_evaluations").upsert(
+  const { data: evaluation, error } = await supabase.from("task_evaluations").upsert(
     {
       claim_id: claimId,
       evaluator_id: profile.id,
       decision,
-      score,
+      quality,
       feedback,
       evaluated_at: new Date().toISOString(),
     },
     { onConflict: "claim_id" },
-  );
-  if (error) jump("/reviews", "error", "Evaluasi gagal disimpan.");
+  ).select("score,complexity_score,timeliness_score,quality_score,completion_score").single();
+  if (error || !evaluation) jump("/reviews", "error", "Evaluasi gagal disimpan.");
 
   revalidatePath("/reviews");
   revalidatePath("/my-tasks");
   revalidatePath("/my-week");
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
-  jump("/reviews", "ok", "Evaluasi berhasil disimpan.");
+  jump("/reviews", "ok", `Evaluasi berhasil disimpan. Skor aktivitas ${Number(evaluation.score).toFixed(2)}.`);
 }
