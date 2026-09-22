@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { requireProfile } from "@/lib/auth";
 import { getCurrentPeriod } from "@/lib/data";
+import { COMPLEXITY_OPTIONS, complexityLabel } from "@/lib/scoring";
 import { createTask } from "../actions";
 
 export default async function TasksPage({
@@ -26,7 +27,7 @@ export default async function TasksPage({
   if (period) {
     const taskResult = await supabase
       .from("tasks")
-      .select("id,title,status,priority,weight,due_at,employees!tasks_assigned_to_fkey(full_name)")
+      .select("id,title,status,priority,complexity,due_at,employees!tasks_assigned_to_fkey(full_name)")
       .eq("period_id", period.id)
       .order("created_at", { ascending: false });
     tasks = taskResult.data ?? [];
@@ -74,8 +75,12 @@ export default async function TasksPage({
                 </select>
               </div>
               <div className="field">
-                <label>Weight</label>
-                <input name="weight" type="number" min="0.1" max="100" step="0.1" defaultValue="1" />
+                <label>Kompleksitas</label>
+                <select name="complexity" defaultValue="administrasi">
+                  {COMPLEXITY_OPTIONS.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
               </div>
               <div className="field">
                 <label>Due date</label>
@@ -90,7 +95,7 @@ export default async function TasksPage({
       <section className="section table-wrap">
         <table>
           <thead>
-            <tr><th>Task</th><th>Employee</th><th>Status</th><th>Priority</th><th>Weight</th><th>Due</th></tr>
+            <tr><th>Task</th><th>Employee</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th></tr>
           </thead>
           <tbody>
             {tasks.map((task) => (
@@ -99,7 +104,7 @@ export default async function TasksPage({
                 <td>{task.employees?.full_name}</td>
                 <td><StatusBadge status={task.status} /></td>
                 <td>{task.priority}</td>
-                <td>{task.weight}</td>
+                <td>{complexityLabel(task.complexity)}</td>
                 <td>{task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</td>
               </tr>
             ))}
