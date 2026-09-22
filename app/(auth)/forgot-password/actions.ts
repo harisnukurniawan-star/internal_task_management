@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getAppOrigin } from "@/lib/site-url";
+
+const PRODUCTION_RESET_CALLBACK =
+  "https://internaltaskmanagement.vercel.app/auth/confirm?next=/set-password";
 
 export async function requestPasswordReset(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -11,16 +13,9 @@ export async function requestPasswordReset(formData: FormData) {
     redirect(`/forgot-password?error=${encodeURIComponent("Masukkan alamat email yang valid.")}`);
   }
 
-  let origin: string;
-  try {
-    origin = await getAppOrigin();
-  } catch {
-    redirect(`/forgot-password?error=${encodeURIComponent("Alamat aplikasi tidak dapat ditentukan. Hubungi administrator.")}`);
-  }
-
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/confirm?next=/set-password`,
+    redirectTo: PRODUCTION_RESET_CALLBACK,
   });
 
   if (error) {
