@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createEmailLinkClient } from "@/lib/supabase/email-link-client";
 
 const PRODUCTION_RESET_CALLBACK =
   "https://internaltaskmanagement.vercel.app/auth/confirm?next=/set-password";
@@ -13,7 +13,9 @@ export async function requestPasswordReset(formData: FormData) {
     redirect(`/forgot-password?error=${encodeURIComponent("Masukkan alamat email yang valid.")}`);
   }
 
-  const supabase = await createClient();
+  // Request email link dengan implicit flow agar link dapat dibuka dari
+  // browser/perangkat lain tanpa bergantung pada PKCE code_verifier.
+  const supabase = createEmailLinkClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: PRODUCTION_RESET_CALLBACK,
   });
@@ -22,5 +24,5 @@ export async function requestPasswordReset(formData: FormData) {
     redirect(`/forgot-password?error=${encodeURIComponent("Link reset password gagal dikirim. Coba lagi beberapa saat lagi.")}`);
   }
 
-  redirect(`/forgot-password?message=${encodeURIComponent("Jika email terdaftar dan akun aktif, link reset password sudah dikirim. Periksa inbox dan folder spam.")}`);
+  redirect(`/forgot-password?message=${encodeURIComponent("Jika email terdaftar, link terbaru sudah dikirim. Gunakan hanya email yang paling baru karena link sebelumnya otomatis tidak berlaku.")}`);
 }
