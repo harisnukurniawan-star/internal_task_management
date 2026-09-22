@@ -44,9 +44,6 @@ export async function requestActivation(formData: FormData) {
   }
 
   const supabase = await createClient();
-
-  // Grant aktivasi dibuat otomatis di server, tidak pernah ditampilkan ke user,
-  // dan hanya berlaku singkat sebelum dikonsumsi trigger Auth di Supabase.
   const signupGrant = `${randomUUID()}-${randomUUID()}`;
 
   const { data: binding, error: bindingError } = await supabase.rpc("claim_activation_slot", {
@@ -83,10 +80,17 @@ export async function requestActivation(formData: FormData) {
     if (lower.includes("already registered") || lower.includes("already been registered")) {
       activationError("Gmail ini sudah mempunyai akun login. Silakan gunakan halaman Masuk.");
     }
-    if (lower.includes("confirmation") || lower.includes("sending") || lower.includes("email")) {
-      activationError("Supabase masih mencoba mengirim email konfirmasi. Matikan Confirm email di Authentication > Sign In / Providers > Email, lalu coba lagi.");
+    if (
+      lower.includes("confirmation email") ||
+      lower.includes("email confirmation") ||
+      lower.includes("error sending confirmation")
+    ) {
+      activationError("Konfirmasi email Supabase masih aktif atau layanan email konfirmasi gagal. Pastikan Confirm email OFF, lalu coba lagi.");
     }
-    activationError(error.message || "Aktivasi akun gagal.");
+    if (lower.includes("rate limit")) {
+      activationError("Batas percobaan Auth sementara tercapai. Tunggu sebentar lalu coba lagi.");
+    }
+    activationError(`Aktivasi gagal: ${error.message}`);
   }
 
   // With Confirm email disabled, signUp returns a session immediately.
@@ -94,7 +98,7 @@ export async function requestActivation(formData: FormData) {
   if (!data.session) {
     const signIn = await supabase.auth.signInWithPassword({ email, password });
     if (signIn.error) {
-      activationError("Akun dibuat tetapi Supabase masih mewajibkan konfirmasi email. Matikan Confirm email lalu coba login kembali.");
+      activationError(`Akun dibuat tetapi sesi login belum terbentuk: ${signIn.error.message}`);
     }
   }
 
