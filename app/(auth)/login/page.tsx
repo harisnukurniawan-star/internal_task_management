@@ -1,6 +1,4 @@
 import { login } from "./actions";
-import { ActivationModal } from "./activation-modal";
-import { ActivationToast } from "./activation-toast";
 
 export default async function LoginPage({
   searchParams,
@@ -8,11 +6,9 @@ export default async function LoginPage({
   searchParams: Promise<{
     error?: string;
     message?: string;
-    activation_error?: string;
-    activation_message?: string;
   }>;
 }) {
-  const { error, message, activation_error, activation_message } = await searchParams;
+  const { error, message } = await searchParams;
 
   return (
     <main className="login">
@@ -42,16 +38,10 @@ export default async function LoginPage({
         <p className="muted small activation-help">Buka preview aplikasi dalam mode read-only tanpa login dan tanpa akses data privat.</p>
 
         <div className="section-sm">
-          <a className="btn secondary activation-trigger" href="#activation">Aktivasi akun / Buat password</a>
-          <p className="muted small activation-help">Masukkan username untuk menerima link aktivasi di Gmail terdaftar. Password dibuat setelah link email dibuka.</p>
+          <a className="btn secondary activation-trigger" href="/activate-account">Aktivasi Akun</a>
+          <p className="muted small activation-help">Belum punya password? Kirim link aktivasi ke email yang sudah didaftarkan administrator.</p>
         </div>
       </section>
-
-      <ActivationModal error={activation_error} message={activation_message} />
-      <ActivationToast
-        type={activation_error ? "error" : activation_message ? "success" : undefined}
-        message={activation_error || activation_message}
-      />
     </main>
   );
 }
