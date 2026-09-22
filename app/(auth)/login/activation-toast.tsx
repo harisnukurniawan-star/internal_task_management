@@ -7,15 +7,20 @@ export function ActivationToast({ type, message }: { type?: "success" | "error";
   const router = useRouter();
   const [visible, setVisible] = useState(Boolean(type && message));
 
+  const dismiss = () => {
+    setVisible(false);
+    router.replace("/login", { scroll: false });
+  };
+
   useEffect(() => {
     if (!type || !message) return;
     setVisible(true);
     const timer = window.setTimeout(() => {
-      setVisible(false);
-      window.setTimeout(() => router.replace("/login", { scroll: false }), 250);
+      dismiss();
     }, 5000);
     return () => window.clearTimeout(timer);
-  }, [type, message, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, message]);
 
   if (!visible || !type || !message) return null;
 
@@ -23,11 +28,10 @@ export function ActivationToast({ type, message }: { type?: "success" | "error";
     <div className={`activation-toast ${type}`} role="status" aria-live="polite">
       <div className="activation-toast-icon" aria-hidden="true">{type === "success" ? "✓" : "!"}</div>
       <div className="activation-toast-copy">
-        <strong>{type === "success" ? "Link aktivasi terkirim" : "Pengiriman gagal"}</strong>
+        <strong>{type === "success" ? "Aktivasi berhasil" : "Aktivasi gagal"}</strong>
         <span>{message}</span>
-        {type === "success" ? <small>Cek Inbox, Promotions, atau Spam di email tujuan.</small> : null}
       </div>
-      <button type="button" className="activation-toast-close" onClick={() => setVisible(false)} aria-label="Tutup notifikasi">×</button>
+      <button type="button" className="activation-toast-close" onClick={dismiss} aria-label="Tutup notifikasi">×</button>
     </div>
   );
 }
