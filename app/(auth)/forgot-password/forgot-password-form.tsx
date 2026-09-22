@@ -36,7 +36,7 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    setMessage("Jika email terdaftar dan akun aktif, link reset password sudah dikirim. Gunakan link terbaru dari email tersebut.");
+    setMessage("Jika email sudah memiliki akun aktif, link reset password sudah dikirim. Jika belum pernah aktivasi, gunakan menu Aktivasi akun / Buat password di halaman login.");
   }
 
   return (
