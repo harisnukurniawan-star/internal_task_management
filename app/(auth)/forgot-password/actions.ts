@@ -7,20 +7,22 @@ const PRODUCTION_RESET_CALLBACK =
   "https://internaltaskmanagement.vercel.app/auth/confirm?next=/set-password";
 
 export async function requestPasswordReset(formData: FormData) {
-  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const username = String(formData.get("username") || "").trim().toLowerCase();
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    redirect(`/forgot-password?error=${encodeURIComponent("Masukkan alamat email yang valid.")}`);
+  if (!/^[a-z0-9._-]{3,40}$/.test(username)) {
+    redirect(`/forgot-password?error=${encodeURIComponent("Masukkan username yang valid.")}`);
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: PRODUCTION_RESET_CALLBACK,
+  const { data: email, error: resolveError } = await supabase.rpc("resolve_auth_email", {
+    p_username: username,
   });
 
-  if (error) {
-    redirect(`/forgot-password?error=${encodeURIComponent("Link reset password gagal dikirim. Coba lagi beberapa saat lagi.")}`);
+  if (!resolveError && email) {
+    await supabase.auth.resetPasswordForEmail(String(email), {
+      redirectTo: PRODUCTION_RESET_CALLBACK,
+    });
   }
 
-  redirect(`/forgot-password?message=${encodeURIComponent("Jika email terdaftar dan akun aktif, link reset password sudah dikirim. Periksa inbox dan folder spam.")}`);
+  redirect(`/forgot-password?message=${encodeURIComponent("Jika username terdaftar dan akun aktif, link reset password sudah dikirim ke email recovery akun.")}`);
 }
