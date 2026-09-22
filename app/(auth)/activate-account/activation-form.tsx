@@ -26,7 +26,7 @@ function friendlyActivationError(message: string) {
   if (lower.includes("grant aktivasi")) {
     return "Permintaan aktivasi kedaluwarsa. Silakan kirim ulang link aktivasi.";
   }
-  return message;
+  return "Aktivasi belum dapat diproses. Silakan coba lagi atau hubungi administrator.";
 }
 
 export function ActivationForm() {
@@ -39,7 +39,8 @@ export function ActivationForm() {
     setMessage(null);
     setError(null);
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     const email = String(formData.get("email") || "").trim().toLowerCase();
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -93,10 +94,10 @@ export function ActivationForm() {
         throw new Error(emailError.message || "Link aktivasi gagal dikirim.");
       }
 
-      event.currentTarget.reset();
       setMessage(
         "Link aktivasi sudah dikirim. Buka email terbaru, klik link Aktivasi Akun, lalu buat password di halaman berikutnya.",
       );
+      form.reset();
     } catch (caught) {
       const raw = caught instanceof Error ? caught.message : "Aktivasi gagal. Silakan coba lagi.";
       setError(friendlyActivationError(raw));
