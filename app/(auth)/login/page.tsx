@@ -18,14 +18,14 @@ export default async function LoginPage({
     <main className="login">
       <section className="login-card">
         <h1>Internal Task Management</h1>
-        <p className="muted">Masuk menggunakan akun yang telah didaftarkan oleh administrator.</p>
+        <p className="muted">Masuk menggunakan username dan password akun yang telah didaftarkan administrator.</p>
         {error ? <p className="notice error">{error}</p> : null}
         {message ? <p className="notice ok">{message}</p> : null}
 
         <form action={login} className="form section">
           <div className="field">
-            <label>Email login</label>
-            <input name="email" type="email" required autoComplete="email" />
+            <label>Username</label>
+            <input name="username" type="text" required autoComplete="username" placeholder="contoh: heri" />
           </div>
           <div className="field">
             <label>Password</label>
@@ -43,7 +43,7 @@ export default async function LoginPage({
 
         <div className="section-sm">
           <a className="btn secondary activation-trigger" href="#activation">Aktivasi akun / Buat password</a>
-          <p className="muted small activation-help">Akun baru diaktifkan langsung dengan Gmail dan password. Grant keamanan dibuat otomatis oleh server.</p>
+          <p className="muted small activation-help">Aktivasi cukup dengan username dan password. Email recovery dan role mengikuti data administrator.</p>
         </div>
       </section>
 
