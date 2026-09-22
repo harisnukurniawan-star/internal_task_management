@@ -1,10 +1,10 @@
 import { requestActivation } from "./actions";
 
 const USERS = [
-  { value: "system_admin", label: "Admin", detail: "hcconnectpln@gmail.com" },
-  { value: "endang_mirah_ayu", label: "Endang Mirah Ayu", detail: "Employee" },
-  { value: "citra_aries", label: "Citra Aries", detail: "Employee" },
-  { value: "heri_syamsudin", label: "Heri Syamsudin", detail: "Employee · hery.syam@gmail.com" },
+  { value: "system_admin", label: "Admin · hcconnectpln@gmail.com" },
+  { value: "endang_mirah_ayu", label: "Endang Mirah Ayu · Employee" },
+  { value: "citra_aries", label: "Citra Aries · Employee" },
+  { value: "heri_syamsudin", label: "Heri Syamsudin · Employee · hery.syam@gmail.com" },
 ];
 
 export function ActivationModal({ error, message }: { error?: string; message?: string }) {
@@ -15,31 +15,29 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
         <div className="activation-head">
           <div>
             <h2 id="activation-title">Aktivasi akun</h2>
-            <p className="muted small">Pilih user, isi Gmail, lalu buat password. Kode keamanan aktivasi dibuat otomatis oleh sistem.</p>
+            <p className="muted small">Pilih user, isi Gmail, lalu buat password.</p>
           </div>
           <a className="activation-close" href="#" aria-label="Tutup">×</a>
         </div>
 
         <p className="notice warning">
-          <strong>First Gmail binding:</strong> Admin dikunci ke hcconnectpln@gmail.com, Heri Syamsudin ke hery.syam@gmail.com. Endang dan Citra akan dikunci ke Gmail pertama yang berhasil diaktifkan. Harisnu Kurniawan sudah memiliki akun Supervisor aktif.
+          Admin dan Heri memakai Gmail yang sudah ditetapkan. Endang dan Citra akan terikat ke Gmail pertama yang berhasil diaktifkan.
         </p>
 
         {error ? <p className="notice error">{error}</p> : null}
         {message ? <p className="notice ok">{message}</p> : null}
 
         <form action={requestActivation} className="form section-sm">
-          <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
-            <legend style={{ fontWeight: 600, marginBottom: 8 }}>Nama user</legend>
-            <div style={{ display: "grid", gap: 8 }}>
+          <div className="field">
+            <label>Nama user</label>
+            <select name="activation_user" required defaultValue="">
+              <option value="" disabled>Pilih user</option>
               {USERS.map((user) => (
-                <label key={user.value} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", border: "1px solid #d7e0ea", borderRadius: 10, cursor: "pointer" }}>
-                  <input type="radio" name="activation_user" value={user.value} required />
-                  <span><strong>{user.label}</strong><br /><small className="muted">{user.detail}</small></span>
-                </label>
+                <option key={user.value} value={user.value}>{user.label}</option>
               ))}
-            </div>
+            </select>
             <small className="muted">Harisnu Kurniawan · Supervisor · sudah aktif.</small>
-          </fieldset>
+          </div>
 
           <div className="field">
             <label>Gmail untuk login</label>
@@ -64,6 +62,7 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
             <label>Konfirmasi password</label>
             <input name="activation_password_confirmation" type="password" minLength={8} required autoComplete="new-password" />
           </div>
+
           <button className="btn" type="submit">Aktifkan Akun & Masuk</button>
           <a className="btn secondary activation-cancel" href="#">Batal</a>
         </form>
