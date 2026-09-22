@@ -17,6 +17,13 @@ create table if not exists public.activation_slots (
 alter table public.activation_slots enable row level security;
 revoke all on table public.activation_slots from anon, authenticated;
 
+create policy activation_slots_deny_direct_access
+on public.activation_slots
+for all
+to anon, authenticated
+using (false)
+with check (false);
+
 insert into public.activation_slots(slot_key, full_name, role, bound_email, bound_at)
 values
   ('harisnu_kurniawan','Harisnu Kurniawan','admin','harisnu@gmail.com',now()),
@@ -102,5 +109,5 @@ begin
   return query select v_slot.slot_key,v_slot.full_name,v_slot.role,v_email,case when v_was_bound then 'already_bound' else 'bound' end;
 end; $$;
 
-revoke all on function public.claim_activation_slot(text,text) from public;
-grant execute on function public.claim_activation_slot(text,text) to anon, authenticated;
+revoke all on function public.claim_activation_slot(text,text) from public, authenticated;
+grant execute on function public.claim_activation_slot(text,text) to anon;
