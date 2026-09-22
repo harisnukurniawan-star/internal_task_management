@@ -15,7 +15,7 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
         <div className="activation-head">
           <div>
             <h2 id="activation-title">Aktivasi akun</h2>
-            <p className="muted small">Pilih user, isi Gmail dan buat password langsung tanpa link email.</p>
+            <p className="muted small">Pilih user, isi Gmail, kode aktivasi, dan buat password langsung tanpa link email.</p>
           </div>
           <a className="activation-close" href="#" aria-label="Tutup">×</a>
         </div>
@@ -51,6 +51,18 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
               title="Gunakan alamat Gmail dengan akhiran @gmail.com"
             />
             <small className="muted">Satu Gmail hanya dapat terikat ke satu user.</small>
+          </div>
+          <div className="field">
+            <label>Kode aktivasi</label>
+            <input
+              name="activation_code"
+              type="text"
+              required
+              autoComplete="one-time-code"
+              inputMode="text"
+              placeholder="Masukkan kode dari administrator"
+            />
+            <small className="muted">Kode aktivasi hanya berlaku untuk user yang dipilih.</small>
           </div>
           <div className="field">
             <label>Password</label>
