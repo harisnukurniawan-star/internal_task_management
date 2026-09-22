@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createEmailLinkClient } from "@/lib/supabase/email-link-client";
 
 const PRODUCTION_ACTIVATION_CALLBACK =
   "https://internaltaskmanagement.vercel.app/auth/confirm?next=/set-password";
@@ -51,7 +51,7 @@ export function ActivationForm() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      const supabase = createEmailLinkClient();
       const signupGrant = `${crypto.randomUUID()}-${crypto.randomUUID()}`;
 
       const { data: bindingData, error: bindingError } = await supabase.rpc(
@@ -95,7 +95,7 @@ export function ActivationForm() {
       }
 
       setMessage(
-        "Link aktivasi sudah dikirim. Buka email terbaru, klik link Aktivasi Akun, lalu buat password di halaman berikutnya.",
+        "Link aktivasi sudah dikirim. Link dapat dibuka dari browser atau perangkat mana pun. Buka email terbaru lalu buat password.",
       );
       form.reset();
     } catch (caught) {
