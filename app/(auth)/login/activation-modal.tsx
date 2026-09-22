@@ -2,10 +2,9 @@ import { requestActivation } from "./actions";
 
 const USERS = [
   { value: "system_admin", label: "Admin · hcconnectpln@gmail.com" },
-  { value: "harisnu_kurniawan", label: "Harisnu Kurniawan · Supervisor" },
   { value: "endang_mirah_ayu", label: "Endang Mirah Ayu · Employee" },
   { value: "citra_aries", label: "Citra Aries · Employee" },
-  { value: "heri_syamsudin", label: "Heri Syamsudin · Employee" },
+  { value: "heri_syamsudin", label: "Heri Syamsudin · Employee · hery.syam@gmail.com" },
 ];
 
 export function ActivationModal({ error, message }: { error?: string; message?: string }) {
@@ -16,13 +15,13 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
         <div className="activation-head">
           <div>
             <h2 id="activation-title">Aktivasi akun</h2>
-            <p className="muted small">Pilih nama user, lalu gunakan Gmail yang sudah ditetapkan atau Gmail pertama untuk user yang belum terikat.</p>
+            <p className="muted small">Buat akun dan password langsung tanpa link email.</p>
           </div>
           <a className="activation-close" href="#" aria-label="Tutup">×</a>
         </div>
 
         <p className="notice warning">
-          <strong>First Gmail binding:</strong> Admin sudah dikunci ke hcconnectpln@gmail.com dan Harisnu Kurniawan ke harisnu@gmail.com. Untuk Employee, Gmail pertama yang berhasil didaftarkan akan dikunci ke user tersebut.
+          <strong>First Gmail binding:</strong> Admin dikunci ke hcconnectpln@gmail.com, Heri Syamsudin ke hery.syam@gmail.com. Endang dan Citra akan dikunci ke Gmail pertama yang berhasil diaktifkan. Harisnu Kurniawan sudah memiliki akun Supervisor aktif.
         </p>
 
         {error ? <p className="notice error">{error}</p> : null}
@@ -36,6 +35,7 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
               {USERS.map((user) => (
                 <option key={user.value} value={user.value}>{user.label}</option>
               ))}
+              <option value="" disabled>Harisnu Kurniawan · Supervisor · sudah aktif</option>
             </select>
           </div>
           <div className="field">
@@ -52,7 +52,20 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
             />
             <small className="muted">Satu Gmail hanya dapat terikat ke satu user.</small>
           </div>
-          <button className="btn" type="submit">Daftarkan Gmail & Kirim Link</button>
+          <div className="field">
+            <label>Kode aktivasi</label>
+            <input name="activation_code" type="password" required autoComplete="one-time-code" />
+            <small className="muted">Gunakan kode aktivasi sekali pakai yang diberikan Admin.</small>
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input name="activation_password" type="password" minLength={8} required autoComplete="new-password" />
+          </div>
+          <div className="field">
+            <label>Konfirmasi password</label>
+            <input name="activation_password_confirmation" type="password" minLength={8} required autoComplete="new-password" />
+          </div>
+          <button className="btn" type="submit">Aktifkan Akun & Masuk</button>
           <a className="btn secondary activation-cancel" href="#">Batal</a>
         </form>
       </section>
