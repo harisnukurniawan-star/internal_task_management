@@ -1,27 +1,13 @@
-import { requestPasswordReset } from "./actions";
+import { ForgotPasswordForm } from "./forgot-password-form";
 
-export default async function ForgotPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string; message?: string }>;
-}) {
-  const { error, message } = await searchParams;
-
+export default function ForgotPasswordPage() {
   return (
     <main className="login">
       <section className="login-card">
         <h1>Lupa Password</h1>
-        <p className="muted">Masukkan email akun Internal Task Management. Kami akan mengirim link untuk membuat password baru.</p>
-        {error ? <p className="notice error">{error}</p> : null}
-        {message ? <p className="notice ok">{message}</p> : null}
+        <p className="muted">Masukkan email akun Internal Task Management. Kami akan mengirim link terbaru untuk membuat password baru.</p>
 
-        <form action={requestPasswordReset} className="form section">
-          <div className="field">
-            <label>Email akun</label>
-            <input name="email" type="email" required autoComplete="email" />
-          </div>
-          <button className="btn" type="submit">Kirim Link Reset Password</button>
-        </form>
+        <ForgotPasswordForm />
 
         <div className="section-sm">
           <a className="btn secondary" href="/login">Kembali ke Login</a>
