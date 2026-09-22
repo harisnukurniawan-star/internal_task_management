@@ -11,6 +11,17 @@ function safeNext(value: string | null) {
   return value;
 }
 
+function friendlyConfirmError(message: string) {
+  const lower = message.toLowerCase();
+  if (lower.includes("pkce code verifier not found")) {
+    return "Link ini dibuat dengan metode aktivasi lama dan tidak dapat dibuka dari browser/perangkat ini. Kembali ke halaman Aktivasi Akun dan kirim link baru, lalu buka email terbaru.";
+  }
+  if (lower.includes("expired") || lower.includes("invalid")) {
+    return "Link email tidak valid atau sudah kedaluwarsa. Silakan kirim ulang link dan gunakan email terbaru.";
+  }
+  return "Link email gagal diverifikasi. Silakan kirim ulang link terbaru lalu coba lagi.";
+}
+
 export default function AuthConfirmPage() {
   const [status, setStatus] = useState("Memverifikasi link email...");
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +35,7 @@ export default function AuthConfirmPage() {
       const providerError = url.searchParams.get("error_description") || url.searchParams.get("error");
 
       if (providerError) {
-        setError(`Link email tidak dapat diverifikasi: ${providerError}`);
+        setError(friendlyConfirmError(providerError));
         setStatus("");
         return;
       }
@@ -60,7 +71,7 @@ export default function AuthConfirmPage() {
       if (cancelled) return;
 
       if (authError) {
-        setError(`Link email gagal diverifikasi: ${authError.message}. Minta link terbaru lalu coba lagi.`);
+        setError(friendlyConfirmError(authError.message));
         setStatus("");
         return;
       }
@@ -84,7 +95,7 @@ export default function AuthConfirmPage() {
         {error ? <p className="notice error">{error}</p> : null}
         {error ? (
           <div className="section-sm">
-            <a className="btn secondary" href="/login">Kembali ke Login</a>
+            <a className="btn secondary" href="/activate-account">Kirim Link Aktivasi Baru</a>
           </div>
         ) : null}
       </section>
