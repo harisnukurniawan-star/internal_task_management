@@ -11,7 +11,7 @@ export function RecoverySessionBridge() {
   useEffect(() => {
     let cancelled = false;
 
-    async function establishRecoverySession() {
+    async function establishEmailSession() {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
       const tokenHash = url.searchParams.get("token_hash");
@@ -23,7 +23,7 @@ export function RecoverySessionBridge() {
 
       if (!code && !(tokenHash && type) && !(accessToken && refreshToken)) return;
 
-      setStatus("Memverifikasi link reset password...");
+      setStatus("Memverifikasi link email...");
       const supabase = createClient();
 
       let authError: { message: string } | null = null;
@@ -46,7 +46,7 @@ export function RecoverySessionBridge() {
 
       if (authError) {
         setStatus(null);
-        setError(`Link reset password gagal diverifikasi: ${authError.message}. Silakan kirim link reset baru.`);
+        setError(`Link email gagal diverifikasi: ${authError.message}. Silakan minta link terbaru.`);
         return;
       }
 
@@ -54,7 +54,7 @@ export function RecoverySessionBridge() {
       window.location.reload();
     }
 
-    void establishRecoverySession();
+    void establishEmailSession();
     return () => {
       cancelled = true;
     };
