@@ -33,6 +33,7 @@ export default async function LoginPage({
           <button className="btn" type="submit">Masuk</button>
         </form>
 
+        {/* Guest access intentionally removed. */}
         <div className="section-sm">
           <a className="btn secondary activation-trigger" href="/activate-account">Aktivasi Akun</a>
           <p className="muted small activation-help">Belum punya password? Kirim link aktivasi ke email yang sudah didaftarkan administrator.</p>
