@@ -1,10 +1,10 @@
 import { requestActivation } from "./actions";
 
 const USERS = [
-  { value: "system_admin", label: "Admin · hcconnectpln@gmail.com" },
-  { value: "endang_mirah_ayu", label: "Endang Mirah Ayu · Employee" },
-  { value: "citra_aries", label: "Citra Aries · Employee" },
-  { value: "heri_syamsudin", label: "Heri Syamsudin · Employee · hery.syam@gmail.com" },
+  { value: "system_admin", label: "Admin", detail: "hcconnectpln@gmail.com" },
+  { value: "endang_mirah_ayu", label: "Endang Mirah Ayu", detail: "Employee" },
+  { value: "citra_aries", label: "Citra Aries", detail: "Employee" },
+  { value: "heri_syamsudin", label: "Heri Syamsudin", detail: "Employee · hery.syam@gmail.com" },
 ];
 
 export function ActivationModal({ error, message }: { error?: string; message?: string }) {
@@ -28,16 +28,19 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
         {message ? <p className="notice ok">{message}</p> : null}
 
         <form action={requestActivation} className="form section-sm">
-          <div className="field">
-            <label>Nama user</label>
-            <select name="activation_user" required defaultValue="">
-              <option value="" disabled>Pilih user</option>
+          <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend style={{ fontWeight: 600, marginBottom: 8 }}>Nama user</legend>
+            <div style={{ display: "grid", gap: 8 }}>
               {USERS.map((user) => (
-                <option key={user.value} value={user.value}>{user.label}</option>
+                <label key={user.value} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", border: "1px solid #d7e0ea", borderRadius: 10, cursor: "pointer" }}>
+                  <input type="radio" name="activation_user" value={user.value} required />
+                  <span><strong>{user.label}</strong><br /><small className="muted">{user.detail}</small></span>
+                </label>
               ))}
-              <option value="" disabled>Harisnu Kurniawan · Supervisor · sudah aktif</option>
-            </select>
-          </div>
+            </div>
+            <small className="muted">Harisnu Kurniawan · Supervisor · sudah aktif.</small>
+          </fieldset>
+
           <div className="field">
             <label>Gmail untuk login</label>
             <input
@@ -52,6 +55,7 @@ export function ActivationModal({ error, message }: { error?: string; message?: 
             />
             <small className="muted">Satu Gmail hanya dapat terikat ke satu user.</small>
           </div>
+
           <div className="field">
             <label>Password</label>
             <input name="activation_password" type="password" minLength={8} required autoComplete="new-password" />
