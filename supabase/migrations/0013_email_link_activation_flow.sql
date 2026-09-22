@@ -21,7 +21,6 @@ begin
   if v_username !~ '^[a-z0-9._-]{3,40}$' then
     raise exception 'Username tidak valid.';
   end if;
-
   if length(coalesce(p_signup_grant, '')) < 20 then
     raise exception 'Grant aktivasi tidak valid.';
   end if;
@@ -31,14 +30,10 @@ begin
   where s.username = v_username and s.active = true
   for update;
 
-  if not found then
-    raise exception 'Username tidak ditemukan atau tidak aktif.';
-  end if;
-
+  if not found then raise exception 'Username tidak ditemukan atau tidak aktif.'; end if;
   if v_slot.activation_code_consumed_at is not null then
     raise exception 'Akun ini sudah aktif. Silakan gunakan halaman Masuk.';
   end if;
-
   if v_slot.bound_email is null then
     raise exception 'Email user belum didaftarkan administrator.';
   end if;
@@ -68,7 +63,6 @@ begin
   end if;
 
   v_grant_hash := encode(digest(p_signup_grant, 'sha256'), 'hex');
-
   update public.activation_slots
   set signup_grant_hash = v_grant_hash,
       signup_grant_expires_at = now() + interval '5 minutes',
@@ -100,22 +94,15 @@ declare
   v_grant text;
   v_grant_hash text;
 begin
-  if new.email is null then
-    raise exception 'Signup tanpa email tidak diizinkan.';
-  end if;
+  if new.email is null then raise exception 'Signup tanpa email tidak diizinkan.'; end if;
 
   select * into v_slot
   from public.activation_slots s
   where s.bound_email = lower(new.email) and s.active = true
   for update;
 
-  if not found then
-    raise exception 'Email belum diizinkan untuk aktivasi aplikasi.';
-  end if;
-
-  if v_slot.activation_code_consumed_at is not null then
-    raise exception 'Akun ini sudah aktif.';
-  end if;
+  if not found then raise exception 'Email belum diizinkan untuk aktivasi aplikasi.'; end if;
+  if v_slot.activation_code_consumed_at is not null then raise exception 'Akun ini sudah aktif.'; end if;
 
   v_slot_key := coalesce(new.raw_user_meta_data->>'activation_slot','');
   v_grant := coalesce(new.raw_user_meta_data->>'activation_grant','');
@@ -151,11 +138,7 @@ declare
   v_slot public.activation_slots%rowtype;
 begin
   if v_uid is null then return 'no_session'; end if;
-
-  select lower(u.email) into v_email
-  from auth.users u
-  where u.id = v_uid;
-
+  select lower(u.email) into v_email from auth.users u where u.id = v_uid;
   if v_email is null then return 'not_activation'; end if;
 
   select * into v_slot
@@ -240,3 +223,16 @@ $$;
 
 revoke all on function public.complete_email_activation() from public, anon;
 grant execute on function public.complete_email_activation() to authenticated;
+
+-- Any not-yet-completed activation must remain disabled until the email link is
+-- verified and complete_email_activation() finishes.
+update public.access_allowlist a
+set active = false,
+    updated_at = now()
+where exists (
+  select 1
+  from public.activation_slots s
+  where s.bound_email = a.email
+    and s.active = true
+    and s.activation_code_consumed_at is null
+);
