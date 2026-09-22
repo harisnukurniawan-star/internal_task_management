@@ -3,14 +3,26 @@ import { logout } from "@/app/(auth)/login/actions";
 
 export function AppShell({ children, role, name }: { children: React.ReactNode; role: string; name: string }) {
   const supervisor = role === "supervisor" || role === "admin";
-  const roleLabel = role === "admin" ? "Admin" : supervisor ? "Supervisor" : "Employee";
+  const admin = role === "admin";
+  const roleLabel = admin ? "Admin" : supervisor ? "Supervisor" : "Employee";
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">Internal Task Management<small>{name} · {roleLabel}</small></div>
         <nav className="nav">
           <Link href="/dashboard">Dashboard</Link>
-          {supervisor ? <><Link href="/tasks">Team Tasks</Link><Link href="/reviews">Validation & Evaluation</Link></> : <><Link href="/my-week">My Week</Link><Link href="/my-tasks">My Tasks</Link></>}
+          {supervisor ? (
+            <>
+              <Link href="/tasks">Team Tasks</Link>
+              {admin ? <Link href="/employee-entry">Employee Entry Review</Link> : null}
+              <Link href="/reviews">Validation & Evaluation</Link>
+            </>
+          ) : (
+            <>
+              <Link href="/my-week">My Week</Link>
+              <Link href="/my-tasks">My Tasks</Link>
+            </>
+          )}
           <Link href="/leaderboard">Leaderboard</Link>
         </nav>
         <form action={logout} style={{ marginTop: "auto" }}><button className="btn secondary" type="submit">Keluar</button></form>
