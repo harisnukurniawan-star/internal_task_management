@@ -18,14 +18,14 @@ export default async function LoginPage({
     <main className="login">
       <section className="login-card">
         <h1>Internal Task Management</h1>
-        <p className="muted">Masuk menggunakan username dan password akun yang telah didaftarkan administrator.</p>
+        <p className="muted">Masuk menggunakan username atau email akun yang telah didaftarkan administrator.</p>
         {error ? <p className="notice error">{error}</p> : null}
         {message ? <p className="notice ok">{message}</p> : null}
 
         <form action={login} className="form section">
           <div className="field">
-            <label>Username</label>
-            <input name="username" type="text" required autoComplete="username" placeholder="contoh: heri" />
+            <label>Username / Email</label>
+            <input name="username" type="text" required autoComplete="username" placeholder="contoh: harisnu atau harisnu@gmail.com" />
           </div>
           <div className="field">
             <label>Password</label>
