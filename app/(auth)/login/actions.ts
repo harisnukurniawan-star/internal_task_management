@@ -27,7 +27,6 @@ export async function login(formData: FormData) {
 export async function requestActivation(formData: FormData) {
   const userKey = String(formData.get("activation_user") || "").trim();
   const email = String(formData.get("activation_email") || "").trim().toLowerCase();
-  const activationCode = String(formData.get("activation_code") || "").trim();
   const password = String(formData.get("activation_password") || "");
   const confirmation = String(formData.get("activation_password_confirmation") || "");
 
@@ -37,9 +36,6 @@ export async function requestActivation(formData: FormData) {
   if (!/^[a-z0-9._%+\-]+@gmail\.com$/.test(email)) {
     activationError("Aktivasi hanya menerima alamat @gmail.com.");
   }
-  if (!activationCode) {
-    activationError("Masukkan kode aktivasi dari administrator.");
-  }
   if (password.length < 8) {
     activationError("Password minimal 8 karakter.");
   }
@@ -48,12 +44,14 @@ export async function requestActivation(formData: FormData) {
   }
 
   const supabase = await createClient();
+
+  // Grant aktivasi dibuat otomatis di server, tidak pernah ditampilkan ke user,
+  // dan hanya berlaku singkat sebelum dikonsumsi trigger Auth di Supabase.
   const signupGrant = `${randomUUID()}-${randomUUID()}`;
 
   const { data: binding, error: bindingError } = await supabase.rpc("claim_activation_slot", {
     p_slot_key: userKey,
     p_email: email,
-    p_activation_code: activationCode,
     p_signup_grant: signupGrant,
   });
 
