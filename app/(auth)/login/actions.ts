@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAppOrigin } from "@/lib/site-url";
 
 const ACTIVATION_USERS = new Set([
+  "system_admin",
   "harisnu_kurniawan",
   "endang_mirah_ayu",
   "citra_aries",
