@@ -1,7 +1,7 @@
 const tasks = [
-  { title: "Weekly progress operational", complexity: "Koordinasi Internal Tim", due: "23 Sep 2026", status: "submitted" },
-  { title: "Evidence completion follow-up", complexity: "Koordinasi BPO", due: "24 Sep 2026", status: "approved" },
-  { title: "Strategic task monitoring", complexity: "Koordinasi dengan Kantor Pusat", due: "25 Sep 2026", status: "revision" },
+  { id: "weekly-progress-operational", title: "Weekly progress operational", description: "Rekap progres operasional mingguan dan tindak lanjut pekerjaan berjalan.", priority: "medium", complexity: "Koordinasi Internal Tim", due: "23 Sep 2026", status: "submitted", realization: "Progress mingguan telah direkap dan disampaikan untuk proses review.", evidence: "weekly-progress-evidence.pdf" },
+  { id: "evidence-completion-follow-up", title: "Evidence completion follow-up", description: "Follow-up kelengkapan evidence aktivitas bersama BPO.", priority: "medium", complexity: "Koordinasi BPO", due: "24 Sep 2026", status: "approved", realization: "Evidence telah dilengkapi dan tervalidasi.", evidence: "evidence-completion.pdf" },
+  { id: "strategic-task-monitoring", title: "Strategic task monitoring", description: "Monitoring aktivitas strategis yang membutuhkan koordinasi dengan Kantor Pusat.", priority: "medium", complexity: "Koordinasi dengan Kantor Pusat", due: "25 Sep 2026", status: "revision", realization: "Draft monitoring telah dikirim dan sedang dalam tahap perbaikan.", evidence: "strategic-monitoring.pdf" },
 ];
 
 function GuestHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -42,7 +42,7 @@ export function GuestView({ active = "dashboard" }: { active?: string }) {
           <>
             <GuestHeader title="My Week" subtitle="Task periode aktif · Employee preview" />
             <div className="table-wrap"><table><thead><tr><th>Task</th><th>Priority</th><th>Kompleksitas</th><th>Status</th><th>Due</th></tr></thead><tbody>
-              {tasks.map((task) => <tr key={task.title}><td>{task.title}</td><td>medium</td><td>{task.complexity}</td><td><span className={`badge ${task.status}`}>{task.status}</span></td><td>{task.due}</td></tr>)}
+              {tasks.map((task) => <tr key={task.title}><td><a className="evidence-link" href={`/guest/activity/${task.id}`}>{task.title}</a></td><td>{task.priority}</td><td>{task.complexity}</td><td><span className={`badge ${task.status}`}>{task.status}</span></td><td>{task.due}</td></tr>)}
             </tbody></table></div>
           </>
         ) : null}
@@ -53,10 +53,10 @@ export function GuestView({ active = "dashboard" }: { active?: string }) {
             <div className="grid-2">
               {tasks.map((task) => (
                 <section className="card compact" key={task.title}>
-                  <div className="card-head"><strong>{task.title}</strong><span className={`badge ${task.status}`}>{task.status}</span></div>
-                  <p className="muted">Contoh task untuk pengujian tampilan Guest.</p>
+                  <div className="card-head"><a href={`/guest/activity/${task.id}`}><strong>{task.title}</strong></a><span className={`badge ${task.status}`}>{task.status}</span></div>
+                  <p className="muted">{task.description}</p>
                   <div className="task-meta"><span>Priority: medium</span><span>Kompleksitas: {task.complexity}</span><span>Due: {task.due}</span></div>
-                  <div className="notice neutral">View-only · form realisasi dan upload evidence dikunci untuk Guest.</div>
+                  <a className="btn secondary section-sm" href={`/guest/activity/${task.id}`}>Lihat Detail Aktivitas</a>
                 </section>
               ))}
             </div>
@@ -80,4 +80,4 @@ export function GuestView({ active = "dashboard" }: { active?: string }) {
 }
 
 
-export default function GuestPage() { return <GuestView active="dashboard" />; }
+export { tasks };\n\nexport default function GuestPage() { return <GuestView active="dashboard" />; }
