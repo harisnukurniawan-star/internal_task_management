@@ -8,19 +8,17 @@ function GuestHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return <div className="topbar"><div className="page-title"><h1>{title}</h1><p>{subtitle}</p></div><span className="badge">Read-only</span></div>;
 }
 
-export default async function GuestPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const { tab = "dashboard" } = await searchParams;
-  const active = ["dashboard", "my-week", "my-tasks", "leaderboard"].includes(tab) ? tab : "dashboard";
+export function GuestView({ active = "dashboard" }: { active?: string }) {
 
   return (
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">Internal Task Management<small>Guest · Employee · View-only</small></div>
         <nav className="nav">
-          <a href="/guest?tab=dashboard">Dashboard</a>
-          <a href="/guest?tab=my-week">My Week</a>
-          <a href="/guest?tab=my-tasks">My Tasks</a>
-          <a href="/guest?tab=leaderboard">Leaderboard</a>
+          <a className={active === "dashboard" ? "active" : ""} href="/guest/dashboard">Dashboard</a>
+          <a className={active === "my-week" ? "active" : ""} href="/guest/my-week">My Week</a>
+          <a className={active === "my-tasks" ? "active" : ""} href="/guest/my-tasks">My Tasks</a>
+          <a className={active === "leaderboard" ? "active" : ""} href="/guest/leaderboard">Leaderboard</a>
         </nav>
         <a className="btn secondary" href="/login" style={{ marginTop: "auto", textAlign: "center" }}>Keluar Guest</a>
       </aside>
