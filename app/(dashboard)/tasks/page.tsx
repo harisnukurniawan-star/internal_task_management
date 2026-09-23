@@ -93,7 +93,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                   <h3>Edit task</h3>
                   <p className="muted small" style={{ margin: 0 }}>
                     Task dapat diedit selama minggu berjalan.
-                    {submittedTaskIds.has(editTask.id) ? " Karena sudah ada submission, Employee dan Support KPI tetap dikunci." : ""}
+                    {submittedTaskIds.has(editTask.id) ? " Karena sudah ada submission, Employee tetap dikunci tetapi Support KPI masih dapat dipilih atau diubah." : ""}
                   </p>
                 </div>
                 <a className="btn secondary" href="/tasks?tab=list">Batal</a>
@@ -150,7 +150,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                           <summary aria-label={`Action ${task.title}`} title="Action" style={{ cursor: "pointer", listStyle: "none", width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 8, fontSize: 22, fontWeight: 700, color: "#475467", userSelect: "none" }}>⋮</summary>
                           <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 178, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
                             <a href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</a>
-                            {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · identitas terkunci</span> : null}
+                            {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · employee terkunci</span> : null}
                             <form action={deleteTask}>
                               <input type="hidden" name="task_id" value={task.id} />
                               <button type="submit" style={{ width: "100%", border: 0, background: "transparent", color: "#b42318", textAlign: "left", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Hapus task</button>
