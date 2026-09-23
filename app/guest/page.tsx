@@ -1,4 +1,4 @@
-const tasks = [
+export const tasks = [
   { id: "weekly-progress-operational", title: "Weekly progress operational", description: "Rekap progres operasional mingguan dan tindak lanjut pekerjaan berjalan.", priority: "medium", complexity: "Koordinasi Internal Tim", due: "23 Sep 2026", status: "submitted", realization: "Progress mingguan telah direkap dan disampaikan untuk proses review.", evidence: "weekly-progress-evidence.pdf" },
   { id: "evidence-completion-follow-up", title: "Evidence completion follow-up", description: "Follow-up kelengkapan evidence aktivitas bersama BPO.", priority: "medium", complexity: "Koordinasi BPO", due: "24 Sep 2026", status: "approved", realization: "Evidence telah dilengkapi dan tervalidasi.", evidence: "evidence-completion.pdf" },
   { id: "strategic-task-monitoring", title: "Strategic task monitoring", description: "Monitoring aktivitas strategis yang membutuhkan koordinasi dengan Kantor Pusat.", priority: "medium", complexity: "Koordinasi dengan Kantor Pusat", due: "25 Sep 2026", status: "revision", realization: "Draft monitoring telah dikirim dan sedang dalam tahap perbaikan.", evidence: "strategic-monitoring.pdf" },
@@ -78,6 +78,4 @@ export function GuestView({ active = "dashboard" }: { active?: string }) {
     </div>
   );
 }
-
-
-export { tasks };\n\nexport default function GuestPage() { return <GuestView active="dashboard" />; }
+\n\nexport default function GuestPage() { return <GuestView active="dashboard" />; }
