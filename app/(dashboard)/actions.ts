@@ -87,12 +87,25 @@ export async function submitClaim(formData: FormData) {
   if (!employee) jump("/my-tasks", "error", "Profil employee belum ditautkan.");
 
   const taskId = String(formData.get("task_id") || "").trim();
-  const summary = String(formData.get("realization_summary") || "").trim();
+  const completionRaw = String(formData.get("completion_percent") || "").trim();
+  const completionPercent = Number(completionRaw);
+  const progressStatus = String(formData.get("progress_status") || "").trim();
+  const employeeComment = String(formData.get("employee_comment") || "").trim() || null;
+  const summary = employeeComment || `${completionPercent}% · ${progressStatus === "selesai" ? "Selesai" : "Lanjut pekan depan"}`;
   const fileValue = formData.get("evidence");
   const evidence = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
 
-  if (!taskId || summary.length < 3) {
-    jump("/my-tasks", "error", "Realisasi wajib diisi.");
+  if (!taskId || !Number.isFinite(completionPercent) || completionPercent < 0 || completionPercent > 100) {
+    jump("/my-tasks", "error", "Realisasi harus berupa angka 0-100%.");
+  }
+  if (!["selesai", "lanjut_pekan_depan"].includes(progressStatus)) {
+    jump("/my-tasks", "error", "Status progress wajib dipilih.");
+  }
+  if (progressStatus === "selesai" && completionPercent !== 100) {
+    jump("/my-tasks", "error", "Status Selesai hanya dapat dipilih jika realisasi 100%.");
+  }
+  if (progressStatus === "lanjut_pekan_depan" && completionPercent >= 100) {
+    jump("/my-tasks", "error", "Untuk Lanjut pekan depan, realisasi harus di bawah 100%.");
   }
 
   const { data: task } = await supabase
@@ -130,7 +143,9 @@ export async function submitClaim(formData: FormData) {
       task_id: taskId,
       employee_id: employee.id,
       realization_summary: summary,
-      completion_percent: evidence ? 100 : 0,
+      completion_percent: completionPercent,
+      progress_status: progressStatus,
+      employee_comment: employeeComment,
       version,
     })
     .select("id")
