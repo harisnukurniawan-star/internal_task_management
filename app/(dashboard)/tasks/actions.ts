@@ -111,8 +111,8 @@ export async function updateTask(formData: FormData) {
   await ensureOpenPeriod(supabase, task.period_id);
 
   const hasSubmission = (claimResult.data?.length ?? 0) > 0;
-  if (hasSubmission && (assignedTo !== task.assigned_to || supportKpiId !== task.support_kpi_id)) {
-    jump("error", "Task sudah memiliki submission. Employee dan Support KPI tidak dapat dipindah, tetapi atribut task lainnya masih dapat diedit.");
+  if (hasSubmission && assignedTo !== task.assigned_to) {
+    jump("error", "Task sudah memiliki submission. Employee tidak dapat dipindah, tetapi Support KPI dan atribut task lainnya masih dapat diedit.");
   }
 
   const { error } = await supabase.from("tasks").update({
@@ -127,7 +127,7 @@ export async function updateTask(formData: FormData) {
   if (error) jump("error", "Perubahan task gagal disimpan.");
 
   refreshTaskPages();
-  jump("ok", hasSubmission ? "Task berhasil diperbarui. Employee dan Support KPI tetap mengikuti submission yang sudah ada." : "Task berhasil diperbarui.");
+  jump("ok", hasSubmission ? "Task berhasil diperbarui. Employee tetap mengikuti submission yang sudah ada; Support KPI dapat diperbarui." : "Task berhasil diperbarui.");
 }
 
 export async function deleteTask(formData: FormData) {
