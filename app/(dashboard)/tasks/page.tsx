@@ -13,25 +13,31 @@ function kpiFor(task: any) {
   return Array.isArray(task.employee_kpis) ? task.employee_kpis[0] : task.employee_kpis;
 }
 
+function tupoksiFor(task: any) {
+  return Array.isArray(task.employee_tupoksi) ? task.employee_tupoksi[0] : task.employee_tupoksi;
+}
+
 export default async function TasksPage({ searchParams }: { searchParams: Promise<TaskSearchParams> }) {
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
   if (!["admin", "supervisor"].includes(profile.role)) return <p>Unauthorized</p>;
 
   const period = await getCurrentPeriod();
-  const [employeeResult, kpiResult] = await Promise.all([
+  const [employeeResult, kpiResult, tupoksiResult] = await Promise.all([
     supabase.from("employees").select("id,full_name").eq("active", true).order("display_order"),
     supabase.from("employee_kpis").select("id,employee_id,kpi_code,kpi_description,achievement").eq("active", true).order("kpi_code"),
+    supabase.from("employee_tupoksi").select("id,employee_id,tupoksi_code,tupoksi_description").eq("active", true).order("tupoksi_code"),
   ]);
   const employees = employeeResult.data ?? [];
   const kpis = kpiResult.data ?? [];
+  const tupoksi = tupoksiResult.data ?? [];
 
   let tasks: any[] = [];
   const submittedTaskIds = new Set<string>();
   if (period) {
     const taskResult = await supabase
       .from("tasks")
-      .select("id,title,description,status,priority,complexity,due_at,assigned_to,support_kpi_id,employees!tasks_assigned_to_fkey(full_name),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement)")
+      .select("id,title,description,status,priority,complexity,due_at,assigned_to,support_kpi_id,support_tupoksi_id,employees!tasks_assigned_to_fkey(full_name),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)")
       .eq("period_id", period.id)
       .order("created_at", { ascending: false });
     tasks = taskResult.data ?? [];
@@ -62,7 +68,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
             <h3>Assign task</h3>
             <form action={createTaskWithKpi} className="form">
               <input type="hidden" name="period_id" value={period.id} />
-              <TaskIdentityFields employees={employees} kpis={kpis} />
+              <TaskIdentityFields employees={employees} kpis={kpis} tupoksi={tupoksi} />
               <div className="form-row three">
                 <div className="field">
                   <label>Priority</label>
@@ -93,7 +99,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                   <h3>Edit task</h3>
                   <p className="muted small" style={{ margin: 0 }}>
                     Task dapat diedit selama minggu berjalan.
-                    {submittedTaskIds.has(editTask.id) ? " Karena sudah ada submission, Employee tetap dikunci tetapi Support KPI masih dapat dipilih atau diubah." : ""}
+                    {submittedTaskIds.has(editTask.id) ? " Karena sudah ada submission, Employee tetap dikunci tetapi Support KPI dan Support Tupoksi masih dapat dipilih atau diubah." : ""}
                   </p>
                 </div>
                 <a className="btn secondary" href="/tasks?tab=list">Batal</a>
@@ -103,8 +109,10 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                 <TaskIdentityFields
                   employees={employees}
                   kpis={kpis}
+                  tupoksi={tupoksi}
                   defaultEmployeeId={editTask.assigned_to}
                   defaultKpiId={editTask.support_kpi_id || ""}
+                  defaultTupoksiId={editTask.support_tupoksi_id || ""}
                   defaultTitle={editTask.title}
                   defaultDescription={editTask.description || ""}
                   lockIdentity={submittedTaskIds.has(editTask.id)}
@@ -131,16 +139,18 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
 
           <section className={`${editTask ? "section " : ""}table-wrap`}>
             <table>
-              <thead><tr><th>Task</th><th>Employee</th><th>Support KPI</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th><th style={{ width: 54, textAlign: "center" }}>Action</th></tr></thead>
+              <thead><tr><th>Task</th><th>Employee</th><th>Support KPI</th><th>Support Tupoksi</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th><th style={{ width: 54, textAlign: "center" }}>Action</th></tr></thead>
               <tbody>
                 {tasks.map((task) => {
                   const kpi = kpiFor(task);
+                  const tupoksiItem = tupoksiFor(task);
                   const hasSubmission = submittedTaskIds.has(task.id);
                   return (
                     <tr key={task.id}>
                       <td><strong>{task.title}</strong></td>
                       <td>{task.employees?.full_name}</td>
                       <td>{kpi ? <><strong>{kpi.kpi_code}</strong><div className="muted small">{kpi.kpi_description}</div></> : <span className="muted">-</span>}</td>
+                      <td>{tupoksiItem ? <><strong>{tupoksiItem.tupoksi_code}</strong><div className="muted small">{tupoksiItem.tupoksi_description}</div></> : <span className="muted">-</span>}</td>
                       <td><StatusBadge status={task.status} /></td>
                       <td>{task.priority}</td>
                       <td>{complexityLabel(task.complexity)}</td>
@@ -161,7 +171,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                     </tr>
                   );
                 })}
-                {tasks.length === 0 ? <tr><td colSpan={8} className="empty">Belum ada task pada periode aktif.</td></tr> : null}
+                {tasks.length === 0 ? <tr><td colSpan={9} className="empty">Belum ada task pada periode aktif.</td></tr> : null}
               </tbody>
             </table>
           </section>
