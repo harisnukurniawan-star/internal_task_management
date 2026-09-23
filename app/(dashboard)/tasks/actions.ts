@@ -16,19 +16,23 @@ async function validateTaskInputs(
   supabase: any,
   assignedTo: string,
   supportKpiId: string,
+  supportTupoksiId: string,
   priority: string,
   complexity: string,
 ) {
   if (!ALLOWED_PRIORITIES.has(priority)) jump("error", "Priority tidak valid.");
   if (!ALLOWED_COMPLEXITIES.has(complexity)) jump("error", "Kompleksitas tidak valid.");
   if (!supportKpiId) jump("error", "Support KPI wajib dipilih.");
+  if (!supportTupoksiId) jump("error", "Support Tupoksi wajib dipilih.");
 
-  const [employeeResult, kpiResult] = await Promise.all([
+  const [employeeResult, kpiResult, tupoksiResult] = await Promise.all([
     supabase.from("employees").select("id").eq("id", assignedTo).eq("active", true).maybeSingle(),
     supabase.from("employee_kpis").select("id,employee_id").eq("id", supportKpiId).eq("employee_id", assignedTo).eq("active", true).maybeSingle(),
+    supabase.from("employee_tupoksi").select("id,employee_id").eq("id", supportTupoksiId).eq("employee_id", assignedTo).eq("active", true).maybeSingle(),
   ]);
   if (!employeeResult.data) jump("error", "Pegawai tidak aktif atau tidak ditemukan.");
   if (!kpiResult.data) jump("error", "Support KPI tidak sesuai dengan pegawai yang dipilih.");
+  if (!tupoksiResult.data) jump("error", "Support Tupoksi tidak sesuai dengan pegawai yang dipilih.");
 }
 
 async function ensureOpenPeriod(supabase: any, periodId: string) {
@@ -59,6 +63,7 @@ export async function createTaskWithKpi(formData: FormData) {
   const periodId = String(formData.get("period_id") || "").trim();
   const assignedTo = String(formData.get("assigned_to") || "").trim();
   const supportKpiId = String(formData.get("support_kpi_id") || "").trim();
+  const supportTupoksiId = String(formData.get("support_tupoksi_id") || "").trim();
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const priority = String(formData.get("priority") || "medium").trim();
@@ -66,7 +71,7 @@ export async function createTaskWithKpi(formData: FormData) {
   const dueDate = String(formData.get("due_date") || "").trim();
 
   if (!periodId || !assignedTo || title.length < 3) jump("error", "Periode, pegawai, dan judul task wajib diisi.");
-  await validateTaskInputs(supabase, assignedTo, supportKpiId, priority, complexity);
+  await validateTaskInputs(supabase, assignedTo, supportKpiId, supportTupoksiId, priority, complexity);
   await ensureOpenPeriod(supabase, periodId);
 
   const { error } = await supabase.from("tasks").insert({
@@ -74,6 +79,7 @@ export async function createTaskWithKpi(formData: FormData) {
     assigned_to: assignedTo,
     assigned_by: profile.id,
     support_kpi_id: supportKpiId,
+    support_tupoksi_id: supportTupoksiId,
     title,
     description,
     priority,
@@ -93,6 +99,7 @@ export async function updateTask(formData: FormData) {
   const taskId = String(formData.get("task_id") || "").trim();
   const assignedTo = String(formData.get("assigned_to") || "").trim();
   const supportKpiId = String(formData.get("support_kpi_id") || "").trim();
+  const supportTupoksiId = String(formData.get("support_tupoksi_id") || "").trim();
   const title = String(formData.get("title") || "").trim();
   const description = String(formData.get("description") || "").trim() || null;
   const priority = String(formData.get("priority") || "medium").trim();
@@ -100,10 +107,10 @@ export async function updateTask(formData: FormData) {
   const dueDate = String(formData.get("due_date") || "").trim();
 
   if (!taskId || !assignedTo || title.length < 3) jump("error", "Pegawai dan judul task wajib diisi.");
-  await validateTaskInputs(supabase, assignedTo, supportKpiId, priority, complexity);
+  await validateTaskInputs(supabase, assignedTo, supportKpiId, supportTupoksiId, priority, complexity);
 
   const [taskResult, claimResult] = await Promise.all([
-    supabase.from("tasks").select("id,status,period_id,assigned_to,support_kpi_id").eq("id", taskId).maybeSingle(),
+    supabase.from("tasks").select("id,status,period_id,assigned_to,support_kpi_id,support_tupoksi_id").eq("id", taskId).maybeSingle(),
     supabase.from("task_claims").select("id").eq("task_id", taskId).limit(1),
   ]);
   const task = taskResult.data;
@@ -112,12 +119,13 @@ export async function updateTask(formData: FormData) {
 
   const hasSubmission = (claimResult.data?.length ?? 0) > 0;
   if (hasSubmission && assignedTo !== task.assigned_to) {
-    jump("error", "Task sudah memiliki submission. Employee tidak dapat dipindah, tetapi Support KPI dan atribut task lainnya masih dapat diedit.");
+    jump("error", "Task sudah memiliki submission. Employee tidak dapat dipindah, tetapi Support KPI, Support Tupoksi, dan atribut task lainnya masih dapat diedit.");
   }
 
   const { error } = await supabase.from("tasks").update({
     assigned_to: assignedTo,
     support_kpi_id: supportKpiId,
+    support_tupoksi_id: supportTupoksiId,
     title,
     description,
     priority,
@@ -127,7 +135,7 @@ export async function updateTask(formData: FormData) {
   if (error) jump("error", "Perubahan task gagal disimpan.");
 
   refreshTaskPages();
-  jump("ok", hasSubmission ? "Task berhasil diperbarui. Employee tetap mengikuti submission yang sudah ada; Support KPI dapat diperbarui." : "Task berhasil diperbarui.");
+  jump("ok", hasSubmission ? "Task berhasil diperbarui. Employee tetap mengikuti submission yang sudah ada; Support KPI dan Support Tupoksi dapat diperbarui." : "Task berhasil diperbarui.");
 }
 
 export async function deleteTask(formData: FormData) {
