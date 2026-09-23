@@ -8,6 +8,10 @@ function kpiFor(task: any) {
   return Array.isArray(task.employee_kpis) ? task.employee_kpis[0] : task.employee_kpis;
 }
 
+function tupoksiFor(task: any) {
+  return Array.isArray(task.employee_tupoksi) ? task.employee_tupoksi[0] : task.employee_tupoksi;
+}
+
 export default async function MyWeekPage() {
   const { supabase, profile } = await requireProfile();
   const employee = await getEmployeeForProfile(profile.id);
@@ -16,7 +20,7 @@ export default async function MyWeekPage() {
 
   let query = supabase
     .from("tasks")
-    .select("id,title,status,priority,complexity,due_at,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description)")
+    .select("id,title,status,priority,complexity,due_at,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)")
     .eq("assigned_to", employee.id);
   if (period) query = query.eq("period_id", period.id);
   const { data: taskRows } = await query.order("due_at");
@@ -27,13 +31,14 @@ export default async function MyWeekPage() {
       <PageHeader title="My Week" subtitle={period?.label || "Periode aktif"}/>
       <div className="table-wrap">
         <table>
-          <thead><tr><th>Task</th><th>Support KPI</th><th>Priority</th><th>Kompleksitas</th><th>Status</th><th>Due</th></tr></thead>
+          <thead><tr><th>Task</th><th>Support KPI</th><th>Support Tupoksi</th><th>Priority</th><th>Kompleksitas</th><th>Status</th><th>Due</th></tr></thead>
           <tbody>
             {tasks.map((task) => {
               const kpi = kpiFor(task);
-              return <tr key={task.id}><td>{task.title}</td><td>{kpi ? <><strong>{kpi.kpi_code}</strong><div className="muted small">{kpi.kpi_description}</div></> : "-"}</td><td>{task.priority}</td><td>{complexityLabel(task.complexity)}</td><td><StatusBadge status={task.status}/></td><td>{task.due_at ? new Date(task.due_at).toLocaleString("id-ID") : "-"}</td></tr>;
+              const tupoksi = tupoksiFor(task);
+              return <tr key={task.id}><td>{task.title}</td><td>{kpi ? <><strong>{kpi.kpi_code}</strong><div className="muted small">{kpi.kpi_description}</div></> : "-"}</td><td>{tupoksi ? <><strong>{tupoksi.tupoksi_code}</strong><div className="muted small">{tupoksi.tupoksi_description}</div></> : "-"}</td><td>{task.priority}</td><td>{complexityLabel(task.complexity)}</td><td><StatusBadge status={task.status}/></td><td>{task.due_at ? new Date(task.due_at).toLocaleString("id-ID") : "-"}</td></tr>;
             })}
-            {tasks.length === 0 ? <tr><td colSpan={6} className="empty">Belum ada task untuk minggu ini.</td></tr> : null}
+            {tasks.length === 0 ? <tr><td colSpan={7} className="empty">Belum ada task untuk minggu ini.</td></tr> : null}
           </tbody>
         </table>
       </div>
