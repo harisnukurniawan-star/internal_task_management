@@ -78,4 +78,6 @@ export function GuestView({ active = "dashboard" }: { active?: string }) {
     </div>
   );
 }
-\n\nexport default function GuestPage() { return <GuestView active="dashboard" />; }
+
+
+export default function GuestPage() { return <GuestView active="dashboard" />; }
