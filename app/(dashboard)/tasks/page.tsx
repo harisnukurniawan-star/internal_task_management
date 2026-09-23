@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { requireProfile } from "@/lib/auth";
 import { getCurrentPeriod } from "@/lib/data";
 import { COMPLEXITY_OPTIONS, complexityLabel } from "@/lib/scoring";
-import { createTaskWithKpi, updateTask } from "./actions";
+import { createTaskWithKpi, deleteTask, updateTask } from "./actions";
 import { TaskIdentityFields } from "./support-kpi-fields";
 
 type TaskSearchParams = FlashParams & { edit?: string; tab?: string };
@@ -27,7 +27,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const kpis = kpiResult.data ?? [];
 
   let tasks: any[] = [];
-  const lockedTaskIds = new Set<string>();
+  const submittedTaskIds = new Set<string>();
   if (period) {
     const taskResult = await supabase
       .from("tasks")
@@ -39,14 +39,11 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
     const taskIds = tasks.map((task) => task.id);
     if (taskIds.length > 0) {
       const claimResult = await supabase.from("task_claims").select("task_id").in("task_id", taskIds);
-      for (const claim of claimResult.data ?? []) lockedTaskIds.add(claim.task_id);
+      for (const claim of claimResult.data ?? []) submittedTaskIds.add(claim.task_id);
     }
   }
 
-  const requestedEditTask = params.edit ? tasks.find((task) => task.id === params.edit) : null;
-  const editTask = requestedEditTask && !lockedTaskIds.has(requestedEditTask.id) && ["assigned", "in_progress"].includes(requestedEditTask.status)
-    ? requestedEditTask
-    : null;
+  const editTask = params.edit ? tasks.find((task) => task.id === params.edit) : null;
   const activeTab = params.edit ? "list" : params.tab === "assign" ? "assign" : "list";
 
   return (
@@ -87,12 +84,18 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         ) : <div className="notice warning tab-panel">Periode aktif belum tersedia sehingga task belum dapat di-assign.</div>
       ) : (
         <div className="tab-panel">
-          {requestedEditTask && !editTask ? <div className="notice warning" id="edit-task">Task ini sudah memiliki submission/evidence atau statusnya sudah terkunci, sehingga tidak dapat diedit.</div> : null}
+          {params.edit && !editTask ? <div className="notice warning">Task tidak ditemukan pada periode aktif.</div> : null}
 
           {editTask ? (
             <section className="card compact" id="edit-task">
               <div className="card-head">
-                <div><h3>Edit task</h3><p className="muted small" style={{ margin: 0 }}>Hanya Admin dan Supervisor. Edit dikunci setelah pegawai mengirim submission/evidence.</p></div>
+                <div>
+                  <h3>Edit task</h3>
+                  <p className="muted small" style={{ margin: 0 }}>
+                    Task dapat diedit selama minggu berjalan.
+                    {submittedTaskIds.has(editTask.id) ? " Karena sudah ada submission, Employee dan Support KPI tetap dikunci." : ""}
+                  </p>
+                </div>
                 <a className="btn secondary" href="/tasks?tab=list">Batal</a>
               </div>
               <form action={updateTask} className="form section-sm">
@@ -104,6 +107,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                   defaultKpiId={editTask.support_kpi_id || ""}
                   defaultTitle={editTask.title}
                   defaultDescription={editTask.description || ""}
+                  lockIdentity={submittedTaskIds.has(editTask.id)}
                 />
                 <div className="form-row three">
                   <div className="field">
@@ -130,8 +134,8 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
               <thead><tr><th>Task</th><th>Employee</th><th>Support KPI</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th><th style={{ width: 54, textAlign: "center" }}>Action</th></tr></thead>
               <tbody>
                 {tasks.map((task) => {
-                  const editable = !lockedTaskIds.has(task.id) && ["assigned", "in_progress"].includes(task.status);
                   const kpi = kpiFor(task);
+                  const hasSubmission = submittedTaskIds.has(task.id);
                   return (
                     <tr key={task.id}>
                       <td><strong>{task.title}</strong></td>
@@ -144,8 +148,13 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                       <td style={{ textAlign: "center", position: "relative" }}>
                         <details style={{ position: "relative", display: "inline-block" }}>
                           <summary aria-label={`Action ${task.title}`} title="Action" style={{ cursor: "pointer", listStyle: "none", width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 8, fontSize: 22, fontWeight: 700, color: "#475467", userSelect: "none" }}>⋮</summary>
-                          <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 150, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
-                            {editable ? <a href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</a> : <span className="muted small" style={{ display: "block", padding: "8px 10px" }}>Task terkunci</span>}
+                          <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 178, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
+                            <a href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</a>
+                            {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · identitas terkunci</span> : null}
+                            <form action={deleteTask}>
+                              <input type="hidden" name="task_id" value={task.id} />
+                              <button type="submit" style={{ width: "100%", border: 0, background: "transparent", color: "#b42318", textAlign: "left", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Hapus task</button>
+                            </form>
                           </div>
                         </details>
                       </td>
