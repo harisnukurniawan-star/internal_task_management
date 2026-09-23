@@ -27,7 +27,6 @@ export function TaskIdentityFields({
   const [kpiId, setKpiId] = useState(defaultKpiId || "");
   const filteredKpis = useMemo(() => kpis.filter((item) => item.employee_id === employeeId), [employeeId, kpis]);
   const selectedEmployee = employees.find((item) => item.id === employeeId);
-  const selectedKpi = kpis.find((item) => item.id === kpiId);
 
   return (
     <>
@@ -56,28 +55,17 @@ export function TaskIdentityFields({
       </div>
       <div className="field">
         <label>Support KPI</label>
-        {lockIdentity ? (
-          <>
-            <textarea
-              value={selectedKpi ? `${selectedKpi.kpi_code} · ${selectedKpi.kpi_description}${selectedKpi.achievement != null ? ` · ${selectedKpi.achievement}%` : ""}` : "-"}
-              readOnly
-              disabled
-              style={{ minHeight: 64 }}
-            />
-            <input type="hidden" name="support_kpi_id" value={kpiId} />
-            <small className="muted">Employee dan Support KPI dikunci karena task sudah memiliki submission. Atribut task lainnya tetap dapat diedit.</small>
-          </>
-        ) : (
-          <>
-            <select name="support_kpi_id" required value={kpiId} onChange={(event) => setKpiId(event.target.value)}>
-              <option value="" disabled>Pilih KPI yang didukung task ini</option>
-              {filteredKpis.map((item) => (
-                <option key={item.id} value={item.id}>{item.kpi_code} · {item.kpi_description}{item.achievement != null ? ` · ${item.achievement}%` : ""}</option>
-              ))}
-            </select>
-            <small className="muted">Hanya KPI aktif milik pegawai yang dipilih yang dapat dipakai.</small>
-          </>
-        )}
+        <select name="support_kpi_id" required value={kpiId} onChange={(event) => setKpiId(event.target.value)}>
+          <option value="" disabled>Pilih KPI yang didukung task ini</option>
+          {filteredKpis.map((item) => (
+            <option key={item.id} value={item.id}>{item.kpi_code} · {item.kpi_description}{item.achievement != null ? ` · ${item.achievement}%` : ""}</option>
+          ))}
+        </select>
+        <small className="muted">
+          {lockIdentity
+            ? "Employee terkunci karena task sudah memiliki submission. Support KPI tetap dapat dipilih atau diubah sesuai KPI milik employee tersebut."
+            : "Hanya KPI aktif milik pegawai yang dipilih yang dapat dipakai."}
+        </small>
       </div>
     </>
   );
