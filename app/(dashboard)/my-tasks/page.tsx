@@ -10,6 +10,10 @@ function kpiFor(task: any) {
   return Array.isArray(task.employee_kpis) ? task.employee_kpis[0] : task.employee_kpis;
 }
 
+function tupoksiFor(task: any) {
+  return Array.isArray(task.employee_tupoksi) ? task.employee_tupoksi[0] : task.employee_tupoksi;
+}
+
 export default async function MyTasksPage({ searchParams }: { searchParams: Promise<FlashParams> }) {
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
@@ -19,7 +23,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
 
   let taskQuery = supabase
     .from("tasks")
-    .select("id,title,description,status,priority,complexity,due_at,support_kpi_id,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement)")
+    .select("id,title,description,status,priority,complexity,due_at,support_kpi_id,support_tupoksi_id,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)")
     .eq("assigned_to", employee.id);
   if (period) taskQuery = taskQuery.eq("period_id", period.id);
   const { data: taskRows } = await taskQuery.order("created_at", { ascending: false });
@@ -54,6 +58,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
           const evaluation = claim?.task_evaluations;
           const canSubmit = ["assigned", "in_progress", "revision"].includes(task.status);
           const kpi = kpiFor(task);
+          const tupoksi = tupoksiFor(task);
           return (
             <section className="card compact" key={task.id}>
               <div className="card-head"><strong>{task.title}</strong><StatusBadge status={task.status} /></div>
@@ -61,6 +66,10 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
               <div className="notice neutral">
                 <strong>Support KPI</strong><br />
                 {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}{kpi.achievement != null ? ` · Capaian referensi ${kpi.achievement}%` : ""}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}
+              </div>
+              <div className="notice neutral section-sm">
+                <strong>Support Tupoksi</strong><br />
+                {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}
               </div>
               <div className="task-meta">
                 <span>Priority: {task.priority}</span>
@@ -89,6 +98,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                   <input type="hidden" name="task_id" value={task.id} />
                   <div className="submission-box"><strong>Deskripsi Task</strong><p>{task.description || "Tanpa deskripsi"}</p></div>
                   <div className="notice neutral"><strong>Support KPI</strong><br />{kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}</div>
+                  <div className="notice neutral"><strong>Support Tupoksi</strong><br />{tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}</div>
                   <div className="form-row three">
                     <div className="field"><label>Realisasi (target penyelesaian)</label><input name="completion_percent" type="number" min="0" max="100" step="1" required placeholder="0 - 100" /></div>
                     <div className="field"><label>Priority</label><input value={task.priority} readOnly disabled /></div>
