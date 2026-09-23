@@ -23,7 +23,7 @@ button,input,textarea,select{font:inherit}
 .brand small{display:block;font-size:11px;font-weight:500;opacity:.78;margin-top:5px}
 .nav{display:grid;gap:5px}
 .nav a{padding:8px 10px;border-radius:9px;color:#fff;font-size:14px;opacity:.9}
-.nav a:hover{background:#ffffff1a;opacity:1}
+.nav a:hover{background:#ffffff1a;opacity:1}\n.nav a.active{background:#ffffff26;opacity:1;font-weight:700}
 .main{padding:22px;min-width:0;background:#fff}
 .topbar{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:18px}
 .page-title h1{font-size:25px;margin:0 0 4px;color:var(--navy2)}
