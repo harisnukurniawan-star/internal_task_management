@@ -105,14 +105,40 @@ export default async function MyTasksPage({
               {canSubmit ? (
                 <form action={submitClaim} className="form section-sm">
                   <input type="hidden" name="task_id" value={task.id} />
-                  <div className="field">
-                    <label>{task.status === "revision" ? "Realisasi revisi" : "Realisasi"}</label>
-                    <textarea name="realization_summary" required maxLength={2000} />
+                  <div className="submission-box">
+                    <strong>Deskripsi Task</strong>
+                    <p>{task.description || "Tanpa deskripsi"}</p>
+                  </div>
+                  <div className="form-row three">
+                    <div className="field">
+                      <label>Realisasi (target penyelesaian)</label>
+                      <input name="completion_percent" type="number" min="0" max="100" step="1" required placeholder="0 - 100" />
+                    </div>
+                    <div className="field">
+                      <label>Priority</label>
+                      <input value={task.priority} readOnly disabled />
+                    </div>
+                    <div className="field">
+                      <label>Kompleksitas</label>
+                      <input value={complexityLabel(task.complexity)} readOnly disabled />
+                    </div>
                   </div>
                   <div className="field">
-                    <label>Upload evidence</label>
+                    <label>Status progress</label>
+                    <div className="page-tabs">
+                      <label className="page-tab"><input type="radio" name="progress_status" value="selesai" required /> Selesai</label>
+                      <label className="page-tab"><input type="radio" name="progress_status" value="lanjut_pekan_depan" required /> Lanjut pekan depan</label>
+                    </div>
+                    <small className="muted">Pilih Selesai bila pekerjaan tuntas. Pilih Lanjut pekan depan bila aktivitas masih berlanjut.</small>
+                  </div>
+                  <div className="field">
+                    <label>Komentar / Keterangan <span className="muted">(opsional)</span></label>
+                    <textarea name="employee_comment" maxLength={500} placeholder="Tambahkan catatan, kendala, atau informasi tambahan..." />
+                  </div>
+                  <div className="field">
+                    <label>Upload evidence <span className="muted">(opsional)</span></label>
                     <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                    <small className="muted">PDF/JPG/PNG/WebP · maks. 3 MB. Evidence ada = Completion 100, tanpa evidence = 0.</small>
+                    <small className="muted">PDF/JPG/PNG/WebP · maks. 3 MB.</small>
                   </div>
                   <button className="btn" type="submit">
                     {task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}
