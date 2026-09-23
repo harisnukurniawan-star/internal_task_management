@@ -3,10 +3,7 @@ import { login } from "./actions";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    error?: string;
-    message?: string;
-  }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const { error, message } = await searchParams;
 
@@ -33,7 +30,11 @@ export default async function LoginPage({
           <button className="btn" type="submit">Masuk</button>
         </form>
 
-        {/* Guest access intentionally removed. */}
+        <div className="section-sm">
+          <a className="btn secondary" href="/guest">Entry as Guest</a>
+          <p className="muted small activation-help">Akses temporer pengembangan · Employee view-only · tidak dapat mengubah atau mengirim data.</p>
+        </div>
+
         <div className="section-sm">
           <a className="btn secondary activation-trigger" href="/activate-account">Aktivasi Akun</a>
           <p className="muted small activation-help">Belum punya password? Kirim link aktivasi ke email yang sudah didaftarkan administrator.</p>
