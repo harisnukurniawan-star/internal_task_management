@@ -53,6 +53,36 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
       <PageHeader title="My Tasks" subtitle={period?.label || "Task periode aktif"} />
       <FlashMessage params={params} />
 
+      <style>{`
+        .task-tile-grid{align-items:start}
+        .task-accordion{background:#fff;border:1px solid var(--line);border-radius:13px;box-shadow:0 3px 12px #2a35870d;overflow:hidden}
+        .task-accordion[open]{grid-column:1/-1}
+        .task-tile-summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 15px;min-height:78px}
+        .task-tile-summary::-webkit-details-marker{display:none}
+        .task-tile-summary:hover{background:var(--blue-soft)}
+        .task-tile-main{display:grid;gap:7px;min-width:0}
+        .task-tile-main strong{font-size:15px;color:var(--text);line-height:1.35}
+        .task-tile-due{font-size:12px;color:var(--muted)}
+        .task-tile-side{display:flex;align-items:flex-end;gap:7px;flex-direction:column;flex:0 0 auto}
+        .task-open-label{font-size:11px;font-weight:700;color:var(--navy)}
+        .task-accordion[open] .task-open-label{font-size:0}
+        .task-accordion[open] .task-open-label:after{content:'Tutup detail';font-size:11px}
+        .task-detail-body{border-top:1px solid var(--line);padding:15px}
+        .task-detail-meta{margin-top:0;margin-bottom:6px}
+        .progress-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .progress-option{display:block!important;cursor:pointer;font-weight:400!important;color:inherit!important}
+        .progress-option input{position:absolute;opacity:0;pointer-events:none}
+        .progress-choice{display:flex;align-items:center;gap:11px;min-height:66px;padding:11px 13px;border:1px solid #d6daea;border-radius:11px;background:#fff;transition:.15s ease}
+        .progress-choice:hover{border-color:var(--navy);background:var(--blue-soft)}
+        .progress-icon{width:32px;height:32px;border-radius:9px;background:var(--blue-soft-2);color:var(--navy);display:grid;place-items:center;font-size:18px;font-weight:800;flex:0 0 auto}
+        .progress-choice>span:last-child{display:grid;gap:3px}
+        .progress-choice strong{font-size:13px;color:var(--navy2)}
+        .progress-choice small{font-size:11px;color:var(--muted);font-weight:400}
+        .progress-option input:checked + .progress-choice{border-color:var(--navy);background:var(--blue-soft);box-shadow:0 0 0 2px #2a35871a inset}
+        .progress-option input:checked + .progress-choice .progress-icon{background:var(--navy);color:#fff}
+        @media(max-width:700px){.progress-choice-grid{grid-template-columns:1fr}.task-accordion[open]{grid-column:auto}.task-tile-summary{align-items:flex-start}}
+      `}</style>
+
       <div className="grid-2 task-tile-grid">
         {tasks.map((task) => {
           const claim = latestByTask.get(task.id);
