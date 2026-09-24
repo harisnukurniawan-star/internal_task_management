@@ -52,72 +52,122 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader title="My Tasks" subtitle={period?.label || "Task periode aktif"} />
       <FlashMessage params={params} />
-      <div className="grid-2">
+
+      <div className="grid-2 task-tile-grid">
         {tasks.map((task) => {
           const claim = latestByTask.get(task.id);
           const evaluation = claim?.task_evaluations;
           const canSubmit = ["assigned", "in_progress", "revision"].includes(task.status);
           const kpi = kpiFor(task);
           const tupoksi = tupoksiFor(task);
+
           return (
-            <section className="card compact" key={task.id}>
-              <div className="card-head"><strong>{task.title}</strong><StatusBadge status={task.status} /></div>
-              <p className="muted clamp">{task.description || "Tanpa deskripsi"}</p>
-              <div className="notice neutral">
-                <strong>Support KPI</strong><br />
-                {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}{kpi.achievement != null ? ` · Capaian referensi ${kpi.achievement}%` : ""}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}
-              </div>
-              <div className="notice neutral section-sm">
-                <strong>Support Tupoksi</strong><br />
-                {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}
-              </div>
-              <div className="task-meta">
-                <span>Priority: {task.priority}</span>
-                <span>Kompleksitas: {complexityLabel(task.complexity)}</span>
-                <span>Due: {task.due_at ? new Date(task.due_at).toLocaleString("id-ID") : "-"}</span>
-              </div>
-
-              {claim ? (
-                <div className="submission-box">
-                  <div className="task-meta"><span>Submission v{claim.version}</span><span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span></div>
-                  <p><strong>Realisasi:</strong> {Number(claim.completion_percent).toFixed(0)}% · {claim.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai"}</p>
-                  {claim.employee_comment ? <p><strong>Keterangan:</strong> {claim.employee_comment}</p> : null}
-                  {evidenceLinks.get(claim.id) ? <a className="evidence-link" href={evidenceLinks.get(claim.id)} target="_blank" rel="noreferrer">Buka evidence</a> : <span className="muted small">Belum ada evidence</span>}
-                  {evaluation ? (
-                    <div className={`feedback ${evaluation.decision}`}>
-                      <strong>{evaluation.decision === "revision" ? "Perlu revisi" : evaluation.decision}</strong>
-                      <span>Quality: {qualityLabel(evaluation.quality)}</span><span>Kompleksitas: {Number(evaluation.complexity_score).toFixed(1)}</span><span>Ketepatan waktu: {Number(evaluation.timeliness_score).toFixed(1)}</span><span>Quality score: {Number(evaluation.quality_score).toFixed(1)}</span><span>Completion: {Number(evaluation.completion_score).toFixed(1)}</span><span><strong>Skor aktivitas: {Number(evaluation.score).toFixed(2)}</strong></span>
-                      {evaluation.feedback ? <p>{evaluation.feedback}</p> : null}
-                    </div>
-                  ) : task.status === "submitted" ? <div className="notice neutral">Menunggu review Supervisor untuk penilaian Quality dan skor final.</div> : null}
+            <details className="task-accordion" key={task.id}>
+              <summary className="task-tile-summary">
+                <div className="task-tile-main">
+                  <strong>{task.title}</strong>
+                  <span className="task-tile-due">Due: {task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</span>
                 </div>
-              ) : null}
+                <div className="task-tile-side">
+                  <StatusBadge status={task.status} />
+                  <span className="task-open-label">Lihat detail</span>
+                </div>
+              </summary>
 
-              {canSubmit ? (
-                <form action={submitClaim} className="form section-sm">
-                  <input type="hidden" name="task_id" value={task.id} />
-                  <div className="submission-box"><strong>Deskripsi Task</strong><p>{task.description || "Tanpa deskripsi"}</p></div>
-                  <div className="notice neutral"><strong>Support KPI</strong><br />{kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}</div>
-                  <div className="notice neutral"><strong>Support Tupoksi</strong><br />{tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}</div>
-                  <div className="form-row three">
-                    <div className="field"><label>Realisasi (target penyelesaian)</label><input name="completion_percent" type="number" min="0" max="100" step="1" required placeholder="0 - 100" /></div>
-                    <div className="field"><label>Priority</label><input value={task.priority} readOnly disabled /></div>
-                    <div className="field"><label>Kompleksitas</label><input value={complexityLabel(task.complexity)} readOnly disabled /></div>
+              <div className="task-detail-body">
+                <div className="task-meta task-detail-meta">
+                  <span>Priority: {task.priority}</span>
+                  <span>Kompleksitas: {complexityLabel(task.complexity)}</span>
+                  <span>Due: {task.due_at ? new Date(task.due_at).toLocaleString("id-ID") : "-"}</span>
+                </div>
+
+                {claim ? (
+                  <div className="submission-box">
+                    <div className="task-meta"><span>Submission v{claim.version}</span><span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span></div>
+                    <p><strong>Realisasi:</strong> {Number(claim.completion_percent).toFixed(0)}% · {claim.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai"}</p>
+                    {claim.employee_comment ? <p><strong>Keterangan:</strong> {claim.employee_comment}</p> : null}
+                    {evidenceLinks.get(claim.id) ? <a className="evidence-link" href={evidenceLinks.get(claim.id)} target="_blank" rel="noreferrer">Buka evidence</a> : <span className="muted small">Belum ada evidence</span>}
+                    {evaluation ? (
+                      <div className={`feedback ${evaluation.decision}`}>
+                        <strong>{evaluation.decision === "revision" ? "Perlu revisi" : evaluation.decision}</strong>
+                        <span>Quality: {qualityLabel(evaluation.quality)}</span>
+                        <span>Kompleksitas: {Number(evaluation.complexity_score).toFixed(1)}</span>
+                        <span>Ketepatan waktu: {Number(evaluation.timeliness_score).toFixed(1)}</span>
+                        <span>Quality score: {Number(evaluation.quality_score).toFixed(1)}</span>
+                        <span>Completion: {Number(evaluation.completion_score).toFixed(1)}</span>
+                        <span><strong>Skor aktivitas: {Number(evaluation.score).toFixed(2)}</strong></span>
+                        {evaluation.feedback ? <p>{evaluation.feedback}</p> : null}
+                      </div>
+                    ) : task.status === "submitted" ? <div className="notice neutral">Menunggu review Supervisor untuk penilaian Quality dan skor final.</div> : null}
                   </div>
-                  <div className="field">
-                    <label>Status progress</label>
-                    <div className="page-tabs"><label className="page-tab"><input type="radio" name="progress_status" value="selesai" required /> Selesai</label><label className="page-tab"><input type="radio" name="progress_status" value="lanjut_pekan_depan" required /> Lanjut pekan depan</label></div>
-                    <small className="muted">Selesai = 100%. Lanjut pekan depan = realisasi masih di bawah 100%.</small>
-                  </div>
-                  <div className="field"><label>Komentar / Keterangan <span className="muted">(opsional)</span></label><textarea name="employee_comment" maxLength={500} placeholder="Tambahkan catatan, kendala, atau informasi tambahan..." /></div>
-                  <div className="field"><label>Upload evidence <span className="muted">(opsional)</span></label><input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" /><small className="muted">PDF/JPG/PNG/WebP · maks. 3 MB.</small></div>
-                  <button className="btn" type="submit">{task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}</button>
-                </form>
-              ) : null}
-            </section>
+                ) : null}
+
+                {canSubmit ? (
+                  <form action={submitClaim} className="form section-sm">
+                    <input type="hidden" name="task_id" value={task.id} />
+
+                    <div className="submission-box">
+                      <strong>Deskripsi Task</strong>
+                      <p>{task.description || "Tanpa deskripsi"}</p>
+                    </div>
+
+                    <div className="notice neutral">
+                      <strong>Support KPI</strong><br />
+                      {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}
+                    </div>
+
+                    <div className="notice neutral">
+                      <strong>Support Tupoksi</strong><br />
+                      {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan oleh atasan.</span>}
+                    </div>
+
+                    <div className="form-row three">
+                      <div className="field">
+                        <label>Realisasi (target penyelesaian)</label>
+                        <input name="completion_percent" type="number" min="0" max="100" step="1" required placeholder="0 - 100" />
+                      </div>
+                      <div className="field"><label>Priority</label><input value={task.priority} readOnly disabled /></div>
+                      <div className="field"><label>Kompleksitas</label><input value={complexityLabel(task.complexity)} readOnly disabled /></div>
+                    </div>
+
+                    <div className="field">
+                      <label>Status progress</label>
+                      <div className="progress-choice-grid">
+                        <label className="progress-option">
+                          <input type="radio" name="progress_status" value="selesai" required />
+                          <span className="progress-choice">
+                            <span className="progress-icon">✓</span>
+                            <span><strong>Selesai</strong><small>Target penyelesaian 100%</small></span>
+                          </span>
+                        </label>
+                        <label className="progress-option">
+                          <input type="radio" name="progress_status" value="lanjut_pekan_depan" required />
+                          <span className="progress-choice">
+                            <span className="progress-icon">→</span>
+                            <span><strong>Lanjut pekan depan</strong><small>Aktivitas masih berprogres &lt; 100%</small></span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="field">
+                      <label>Komentar / Keterangan <span className="muted">(opsional)</span></label>
+                      <textarea name="employee_comment" maxLength={500} placeholder="Tambahkan catatan, kendala, atau informasi tambahan..." />
+                    </div>
+                    <div className="field">
+                      <label>Upload evidence <span className="muted">(opsional)</span></label>
+                      <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
+                      <small className="muted">PDF/JPG/PNG/WebP · maks. 3 MB.</small>
+                    </div>
+                    <button className="btn" type="submit">{task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}</button>
+                  </form>
+                ) : null}
+              </div>
+            </details>
           );
         })}
       </div>
+
       {tasks.length === 0 ? <div className="card empty">Belum ada task untuk minggu ini.</div> : null}
     </>
   );
