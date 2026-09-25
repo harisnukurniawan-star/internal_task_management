@@ -4,7 +4,7 @@ import { getCurrentPeriod } from "@/lib/data";
 
 export default async function LeaderboardPage() {
   const supabase = await createClient();
-  const period = await getCurrentPeriod();
+  const period = await getCurrentPeriod(supabase);
   let query = supabase
     .from("leaderboard_weekly")
     .select("rank,avg_score,avg_complexity_score,avg_timeliness_score,avg_quality_score,avg_completion_score,total_assigned,total_approved,employees(full_name)")
