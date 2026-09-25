@@ -11,6 +11,14 @@ function relationOne(value: any) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function formatBytes(value?: number | null) {
+  const bytes = Number(value || 0);
+  if (!bytes) return "-";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default async function ReviewsPage({ searchParams }: { searchParams: Promise<ReviewSearchParams> }) {
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
@@ -18,7 +26,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
 
   const { data: claimRows } = await supabase
     .from("task_claims")
-    .select("id,task_id,version,realization_summary,submitted_at,tasks(title,status,complexity,due_at,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)),employees(full_name),task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback),evidence_files(file_name,file_size,storage_path)")
+    .select("id,task_id,version,realization_summary,completion_percent,progress_status,employee_comment,submitted_at,tasks(title,status,complexity,due_at,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)),employees(full_name),task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback),evidence_files(file_name,file_size,storage_path)")
     .order("submitted_at", { ascending: false });
 
   const latestByTask = new Map<string, any>();
@@ -30,16 +38,22 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
   const claim = claims[currentPage - 1] ?? null;
 
-  let evidenceUrl: string | null = null;
-  if (claim?.evidence_files?.[0]) {
-    const evidence = claim.evidence_files[0];
-    const signed = await supabase.storage.from("task-evidence").createSignedUrl(evidence.storage_path, 300, { download: evidence.file_name });
-    evidenceUrl = signed.data?.signedUrl || null;
+  const evidence = claim?.evidence_files?.[0] ?? null;
+  let evidenceViewUrl: string | null = null;
+  let evidenceDownloadUrl: string | null = null;
+  if (evidence) {
+    const [viewSigned, downloadSigned] = await Promise.all([
+      supabase.storage.from("task-evidence").createSignedUrl(evidence.storage_path, 300),
+      supabase.storage.from("task-evidence").createSignedUrl(evidence.storage_path, 300, { download: evidence.file_name }),
+    ]);
+    evidenceViewUrl = viewSigned.data?.signedUrl || null;
+    evidenceDownloadUrl = downloadSigned.data?.signedUrl || null;
   }
 
   const evaluation = claim?.task_evaluations;
   const kpi = relationOne(claim?.tasks?.employee_kpis);
   const tupoksi = relationOne(claim?.tasks?.employee_tupoksi);
+  const progressLabel = claim?.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai";
 
   return (
     <div style={{ height: "calc(100vh - 44px)", overflow: "hidden", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -89,8 +103,13 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 <p style={{ margin: "6px 0 0" }}>{claim.realization_summary}</p>
               </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                {evidenceUrl ? <a className="evidence-link" href={evidenceUrl} target="_blank" rel="noreferrer">Buka evidence · Completion 100</a> : <span className="muted small">Tidak ada evidence file · Completion 0.</span>}
+              <div className="notice neutral" style={{ margin: 0, padding: "9px 10px" }}>
+                <strong>Klaim Employee</strong>
+                <div className="task-meta" style={{ marginTop: 6 }}>
+                  <span><strong>Realisasi:</strong> {Number(claim.completion_percent || 0).toFixed(0)}%</span>
+                  <span><strong>Status:</strong> {progressLabel}</span>
+                  <span><strong>Keterangan:</strong> {claim.employee_comment || "-"}</span>
+                </div>
               </div>
 
               {evaluation ? (
@@ -102,6 +121,25 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   <span>Completion {Number(evaluation.completion_score).toFixed(1)}</span>
                 </div>
               ) : null}
+
+              <div className="submission-box" style={{ marginTop: "auto", padding: 10 }}>
+                <div className="card-head" style={{ alignItems: "center" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <strong>Evidence</strong>
+                    {evidence ? (
+                      <div className="muted small" style={{ marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {evidence.file_name} · {formatBytes(evidence.file_size)} · Completion 100
+                      </div>
+                    ) : <div className="muted small" style={{ marginTop: 4 }}>Belum ada evidence · Completion 0</div>}
+                  </div>
+                  {evidence ? (
+                    <div style={{ display: "flex", gap: 7, flex: "0 0 auto" }}>
+                      {evidenceViewUrl ? <a className="btn secondary" href={evidenceViewUrl} target="_blank" rel="noreferrer" aria-label="View evidence">👁 View</a> : null}
+                      {evidenceDownloadUrl ? <a className="btn" href={evidenceDownloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </div>
 
             <form action={evaluateClaim} className="form" style={{ minWidth: 0, minHeight: 0, height: "100%", display: "flex", flexDirection: "column", gap: 9 }}>
