@@ -23,19 +23,30 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const { supabase, profile } = await requireProfile();
   if (!["admin", "supervisor"].includes(profile.role)) return <p>Unauthorized</p>;
 
-  const [period, employeeResult, kpiResult, tupoksiResult] = await Promise.all([
+  const activeTab = params.edit ? "list" : params.tab === "assign" ? "assign" : "list";
+  const needsIdentityData = activeTab === "assign" || Boolean(params.edit);
+
+  const identityPromise = needsIdentityData
+    ? Promise.all([
+        supabase.from("employees").select("id,full_name").eq("active", true).order("display_order"),
+        supabase.from("employee_kpis").select("id,employee_id,kpi_code,kpi_description,achievement").eq("active", true).order("kpi_code"),
+        supabase.from("employee_tupoksi").select("id,employee_id,tupoksi_code,tupoksi_description").eq("active", true).order("tupoksi_code"),
+      ])
+    : Promise.resolve(null);
+
+  const [period, identityResults] = await Promise.all([
     getCurrentPeriod(supabase),
-    supabase.from("employees").select("id,full_name").eq("active", true).order("display_order"),
-    supabase.from("employee_kpis").select("id,employee_id,kpi_code,kpi_description,achievement").eq("active", true).order("kpi_code"),
-    supabase.from("employee_tupoksi").select("id,employee_id,tupoksi_code,tupoksi_description").eq("active", true).order("tupoksi_code"),
+    identityPromise,
   ]);
-  const employees = employeeResult.data ?? [];
-  const kpis = kpiResult.data ?? [];
-  const tupoksi = tupoksiResult.data ?? [];
+
+  const employees = identityResults?.[0].data ?? [];
+  const kpis = identityResults?.[1].data ?? [];
+  const tupoksi = identityResults?.[2].data ?? [];
 
   let tasks: any[] = [];
   const submittedTaskIds = new Set<string>();
-  if (period) {
+
+  if (activeTab === "list" && period) {
     const taskResult = await supabase
       .from("tasks")
       .select("id,title,description,status,priority,complexity,due_at,assigned_to,support_kpi_id,support_tupoksi_id,employees!tasks_assigned_to_fkey(full_name),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)")
@@ -51,7 +62,6 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   }
 
   const editTask = params.edit ? tasks.find((task) => task.id === params.edit) : null;
-  const activeTab = params.edit ? "list" : params.tab === "assign" ? "assign" : "list";
 
   return (
     <>
@@ -59,8 +69,8 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
       <FlashMessage params={params} />
 
       <nav className="page-tabs" aria-label="Team task sections">
-        <Link className={`page-tab ${activeTab === "assign" ? "active" : ""}`} href="/tasks?tab=assign">Assign Task</Link>
-        <Link className={`page-tab ${activeTab === "list" ? "active" : ""}`} href="/tasks?tab=list">Daftar Task</Link>
+        <Link prefetch className={`page-tab ${activeTab === "assign" ? "active" : ""}`} href="/tasks?tab=assign">Assign Task</Link>
+        <Link prefetch className={`page-tab ${activeTab === "list" ? "active" : ""}`} href="/tasks?tab=list">Daftar Task</Link>
       </nav>
 
       {activeTab === "assign" ? (
@@ -103,7 +113,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                     {submittedTaskIds.has(editTask.id) ? " Karena sudah ada submission, Employee tetap dikunci tetapi Support KPI dan Support Tupoksi masih dapat dipilih atau diubah." : ""}
                   </p>
                 </div>
-                <Link className="btn secondary" href="/tasks?tab=list">Batal</Link>
+                <Link prefetch className="btn secondary" href="/tasks?tab=list">Batal</Link>
               </div>
               <form action={updateTask} className="form section-sm">
                 <input type="hidden" name="task_id" value={editTask.id} />
@@ -160,7 +170,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                         <details style={{ position: "relative", display: "inline-block" }}>
                           <summary aria-label={`Action ${task.title}`} title="Action" style={{ cursor: "pointer", listStyle: "none", width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 8, fontSize: 22, fontWeight: 700, color: "#475467", userSelect: "none" }}>⋮</summary>
                           <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 178, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
-                            <Link href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</Link>
+                            <Link prefetch href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</Link>
                             {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · employee terkunci</span> : null}
                             <form action={deleteTask}>
                               <input type="hidden" name="task_id" value={task.id} />
