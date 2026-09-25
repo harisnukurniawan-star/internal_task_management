@@ -20,4 +20,4 @@ export function qualityLabel(value: string | null | undefined) {
   return QUALITY_OPTIONS.find((item) => item.value === value)?.label ?? "Belum dinilai";
 }
 
-export const TIMELINESS_RULE = "Deadline = 100; setiap 24 jam lebih cepat +5 poin hingga maks. 110; terlambat -5 poin per 24 jam hingga min. 0.";
+export const TIMELINESS_RULE = "Berbasis hari kalender (WIB): ≥2 hari lebih cepat = 110; 1 hari lebih cepat = 105; tepat tanggal deadline = 100; 1 hari terlambat = 95; ≥2 hari terlambat = 90. Jam/menit tidak dihitung.";
