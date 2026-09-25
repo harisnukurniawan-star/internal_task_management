@@ -71,8 +71,11 @@ export async function createTaskWithKpi(formData: FormData) {
   const dueDate = String(formData.get("due_date") || "").trim();
 
   if (!periodId || !assignedTo || title.length < 3) jump("error", "Periode, pegawai, dan judul task wajib diisi.");
-  await validateTaskInputs(supabase, assignedTo, supportKpiId, supportTupoksiId, priority, complexity);
-  await ensureOpenPeriod(supabase, periodId);
+
+  await Promise.all([
+    validateTaskInputs(supabase, assignedTo, supportKpiId, supportTupoksiId, priority, complexity),
+    ensureOpenPeriod(supabase, periodId),
+  ]);
 
   const { error } = await supabase.from("tasks").insert({
     period_id: periodId,
@@ -107,12 +110,14 @@ export async function updateTask(formData: FormData) {
   const dueDate = String(formData.get("due_date") || "").trim();
 
   if (!taskId || !assignedTo || title.length < 3) jump("error", "Pegawai dan judul task wajib diisi.");
-  await validateTaskInputs(supabase, assignedTo, supportKpiId, supportTupoksiId, priority, complexity);
 
+  const validationPromise = validateTaskInputs(supabase, assignedTo, supportKpiId, supportTupoksiId, priority, complexity);
   const [taskResult, claimResult] = await Promise.all([
     supabase.from("tasks").select("id,status,period_id,assigned_to,support_kpi_id,support_tupoksi_id").eq("id", taskId).maybeSingle(),
     supabase.from("task_claims").select("id").eq("task_id", taskId).limit(1),
+    validationPromise,
   ]);
+
   const task = taskResult.data;
   if (!task) jump("error", "Task tidak ditemukan.");
   await ensureOpenPeriod(supabase, task.period_id);
@@ -145,12 +150,15 @@ export async function deleteTask(formData: FormData) {
   const taskId = String(formData.get("task_id") || "").trim();
   if (!taskId) jump("error", "Task tidak valid.");
 
-  const { data: task } = await supabase.from("tasks").select("id,period_id,title").eq("id", taskId).maybeSingle();
+  const [taskResult, claimsResult] = await Promise.all([
+    supabase.from("tasks").select("id,period_id,title").eq("id", taskId).maybeSingle(),
+    supabase.from("task_claims").select("id").eq("task_id", taskId),
+  ]);
+  const task = taskResult.data;
   if (!task) jump("error", "Task tidak ditemukan.");
   await ensureOpenPeriod(supabase, task.period_id);
 
-  const { data: claims } = await supabase.from("task_claims").select("id").eq("task_id", taskId);
-  const claimIds = (claims ?? []).map((item: any) => item.id);
+  const claimIds = (claimsResult.data ?? []).map((item: any) => item.id);
   let storagePaths: string[] = [];
   if (claimIds.length > 0) {
     const { data: evidenceRows } = await supabase.from("evidence_files").select("storage_path").in("claim_id", claimIds);
