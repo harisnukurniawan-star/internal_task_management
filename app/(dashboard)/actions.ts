@@ -84,14 +84,6 @@ export async function submitClaim(formData: FormData) {
   const { supabase, profile } = await requireProfile();
   if (profile.role !== "employee") jump("/dashboard", "error", "Akses Employee diperlukan.");
 
-  const { data: employee } = await supabase
-    .from("employees")
-    .select("id")
-    .eq("profile_id", profile.id)
-    .eq("active", true)
-    .maybeSingle();
-  if (!employee) jump("/my-tasks", "error", "Profil employee belum ditautkan.");
-
   const taskId = String(formData.get("task_id") || "").trim();
   const completionRaw = String(formData.get("completion_percent") || "").trim();
   const completionPercent = Number(completionRaw);
@@ -114,18 +106,6 @@ export async function submitClaim(formData: FormData) {
     jump("/my-tasks", "error", "Untuk Lanjut pekan depan, realisasi harus di bawah 100%.");
   }
 
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("id,status,assigned_to")
-    .eq("id", taskId)
-    .maybeSingle();
-  if (!task || task.assigned_to !== employee.id) {
-    jump("/my-tasks", "error", "Task tidak ditemukan atau bukan milik Anda.");
-  }
-  if (!["assigned", "in_progress", "revision"].includes(task.status)) {
-    jump("/my-tasks", "error", "Task ini sedang menunggu review atau sudah ditutup.");
-  }
-
   if (evidence) {
     if (evidence.size > MAX_EVIDENCE_BYTES) {
       jump("/my-tasks", "error", "Evidence maksimal 3 MB.");
@@ -133,6 +113,21 @@ export async function submitClaim(formData: FormData) {
     if (!ALLOWED_EVIDENCE_TYPES.has(evidence.type)) {
       jump("/my-tasks", "error", "Evidence hanya PDF, JPG, PNG, atau WebP.");
     }
+  }
+
+  const [employeeResult, taskResult] = await Promise.all([
+    supabase.from("employees").select("id").eq("profile_id", profile.id).eq("active", true).maybeSingle(),
+    supabase.from("tasks").select("id,status,assigned_to").eq("id", taskId).maybeSingle(),
+  ]);
+  const employee = employeeResult.data;
+  const task = taskResult.data;
+
+  if (!employee) jump("/my-tasks", "error", "Profil employee belum ditautkan.");
+  if (!task || task.assigned_to !== employee.id) {
+    jump("/my-tasks", "error", "Task tidak ditemukan atau bukan milik Anda.");
+  }
+  if (!["assigned", "in_progress", "revision"].includes(task.status)) {
+    jump("/my-tasks", "error", "Task ini sedang menunggu review atau sudah ditutup.");
   }
 
   const { data: oldClaims } = await supabase
