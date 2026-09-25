@@ -14,8 +14,10 @@ function tupoksiFor(task: any) {
 
 export default async function MyWeekPage() {
   const { supabase, profile } = await requireProfile();
-  const employee = await getEmployeeForProfile(profile.id);
-  const period = await getCurrentPeriod();
+  const [employee, period] = await Promise.all([
+    getEmployeeForProfile(profile.id, supabase),
+    getCurrentPeriod(supabase),
+  ]);
   if (!employee) return <p>Employee profile belum ditautkan.</p>;
 
   let query = supabase
