@@ -64,7 +64,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
           </div>
 
           {claim ? (
-            <section className="card compact section-sm" style={{ maxWidth: 980 }}>
+            <section className="card compact section-sm" style={{ width: "100%" }}>
               <div className="card-head"><strong>{claim.tasks?.title}</strong><StatusBadge status={claim.tasks?.status || "submitted"} /></div>
               <div className="task-meta"><span>{claim.employees?.full_name}</span><span>Submission v{claim.version}</span><span>Kompleksitas: {complexityLabel(claim.tasks?.complexity)}</span></div>
               <div className="task-meta"><span>Submit: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span><span>Deadline: {claim.tasks?.due_at ? new Date(claim.tasks.due_at).toLocaleString("id-ID") : "Tidak ditetapkan"}</span></div>
@@ -98,7 +98,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             </section>
           ) : null}
 
-          <div className="section-sm" style={{ display: "flex", justifyContent: "space-between", maxWidth: 980 }}>
+          <div className="section-sm" style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
             {currentPage > 1 ? <a className="btn secondary" href={`/reviews?page=${currentPage - 1}`}>← KPI sebelumnya</a> : <span />}
             {currentPage < claims.length ? <a className="btn" href={`/reviews?page=${currentPage + 1}`}>KPI berikutnya →</a> : <span className="badge">Semua aktivitas sudah di halaman terakhir</span>}
           </div>
