@@ -42,68 +42,100 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const tupoksi = relationOne(claim?.tasks?.employee_tupoksi);
 
   return (
-    <>
-      <PageHeader title="Validation & Evaluation" subtitle="Nilai aktivitas dihitung otomatis dari Kompleksitas, Ketepatan Waktu, Quality, dan Completion evidence." />
-      <FlashMessage params={params} />
-      <div className="notice neutral"><strong>Ketepatan waktu:</strong> {TIMELINESS_RULE}</div>
+    <div style={{ height: "calc(100vh - 44px)", overflow: "hidden", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ flex: "0 0 auto" }}>
+        <PageHeader title="Validation & Evaluation" subtitle="Nilai aktivitas dihitung otomatis dari Kompleksitas, Ketepatan Waktu, Quality, dan Completion evidence." />
+        <FlashMessage params={params} />
+        <div className="notice neutral" style={{ marginBottom: 0, padding: "7px 10px" }}><strong>Ketepatan waktu:</strong> {TIMELINESS_RULE}</div>
+      </div>
 
-      {claims.length > 0 ? (
-        <>
-          <div className="card compact section-sm">
-            <div className="card-head" style={{ alignItems: "center" }}>
-              <div>
-                <strong>Review aktivitas {currentPage} dari {claims.length}</strong>
-                <div className="muted small">Satu aktivitas ditampilkan per halaman.</div>
+      {claims.length > 0 && claim ? (
+        <section className="card compact" style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", padding: 12, display: "flex", flexDirection: "column" }}>
+          <div className="card-head" style={{ alignItems: "center", flex: "0 0 auto", paddingBottom: 9, borderBottom: "1px solid var(--line)" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                <strong style={{ fontSize: 16 }}>{claim.tasks?.title}</strong>
+                <StatusBadge status={claim.tasks?.status || "submitted"} />
               </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                {currentPage > 1 ? <a className="btn secondary" href={`/reviews?page=${currentPage - 1}`}>← Sebelumnya</a> : <span className="btn secondary" style={{ opacity: .45, cursor: "default" }}>← Sebelumnya</span>}
-                <span className="badge">{currentPage} / {claims.length}</span>
-                {currentPage < claims.length ? <a className="btn secondary" href={`/reviews?page=${currentPage + 1}`}>Berikutnya →</a> : <span className="btn secondary" style={{ opacity: .45, cursor: "default" }}>Berikutnya →</span>}
+              <div className="task-meta" style={{ marginTop: 5 }}>
+                <span>{claim.employees?.full_name}</span>
+                <span>Submission v{claim.version}</span>
+                <span>Kompleksitas: {complexityLabel(claim.tasks?.complexity)}</span>
+                <span>Submit: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span>
+                <span>Deadline: {claim.tasks?.due_at ? new Date(claim.tasks.due_at).toLocaleString("id-ID") : "Tidak ditetapkan"}</span>
               </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 7, alignItems: "center", flex: "0 0 auto" }}>
+              {currentPage > 1 ? <a className="btn secondary" href={`/reviews?page=${currentPage - 1}`}>← Sebelumnya</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
+              <span className="badge">{currentPage} / {claims.length}</span>
+              {currentPage < claims.length ? <a className="btn secondary" href={`/reviews?page=${currentPage + 1}`}>Berikutnya →</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
             </div>
           </div>
 
-          {claim ? (
-            <section className="card compact section-sm" style={{ width: "100%" }}>
-              <div className="card-head"><strong>{claim.tasks?.title}</strong><StatusBadge status={claim.tasks?.status || "submitted"} /></div>
-              <div className="task-meta"><span>{claim.employees?.full_name}</span><span>Submission v{claim.version}</span><span>Kompleksitas: {complexityLabel(claim.tasks?.complexity)}</span></div>
-              <div className="task-meta"><span>Submit: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span><span>Deadline: {claim.tasks?.due_at ? new Date(claim.tasks.due_at).toLocaleString("id-ID") : "Tidak ditetapkan"}</span></div>
-              <div className="notice neutral section-sm"><strong>Support KPI</strong><br />{kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}</div>
-              <div className="notice neutral section-sm"><strong>Support Tupoksi</strong><br />{tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}</div>
-              <p>{claim.realization_summary}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.08fr) minmax(380px,.92fr)", gap: 14, flex: "1 1 auto", minHeight: 0, paddingTop: 10 }}>
+            <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 8, overflow: "hidden" }}>
+              <div className="notice neutral" style={{ margin: 0, padding: "8px 10px" }}>
+                <strong>Support KPI</strong><br />
+                {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
+              </div>
+              <div className="notice neutral" style={{ margin: 0, padding: "8px 10px" }}>
+                <strong>Support Tupoksi</strong><br />
+                {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
+              </div>
 
-              {evidenceUrl ? <a className="evidence-link" href={evidenceUrl} target="_blank" rel="noreferrer">Buka evidence · Completion 100</a> : <p className="muted small">Tidak ada evidence file · Completion 0.</p>}
+              <div className="submission-box" style={{ marginTop: 0, padding: 10 }}>
+                <strong>Realisasi Employee</strong>
+                <p style={{ margin: "6px 0 0" }}>{claim.realization_summary}</p>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                {evidenceUrl ? <a className="evidence-link" href={evidenceUrl} target="_blank" rel="noreferrer">Buka evidence · Completion 100</a> : <span className="muted small">Tidak ada evidence file · Completion 0.</span>}
+              </div>
 
               {evaluation ? (
-                <div className={`feedback ${evaluation.decision}`}>
-                  <strong>Skor aktivitas: {Number(evaluation.score).toFixed(2)}</strong>
-                  <span>Kompleksitas: {Number(evaluation.complexity_score).toFixed(1)}</span>
-                  <span>Ketepatan waktu: {Number(evaluation.timeliness_score).toFixed(1)}</span>
-                  <span>Quality: {qualityLabel(evaluation.quality)} · {Number(evaluation.quality_score).toFixed(1)}</span>
-                  <span>Completion: {Number(evaluation.completion_score).toFixed(1)}</span>
+                <div className={`feedback ${evaluation.decision}`} style={{ marginTop: 0, gridTemplateColumns: "repeat(5,minmax(0,1fr))", alignItems: "center" }}>
+                  <strong>Skor: {Number(evaluation.score).toFixed(2)}</strong>
+                  <span>Kompleksitas {Number(evaluation.complexity_score).toFixed(1)}</span>
+                  <span>Waktu {Number(evaluation.timeliness_score).toFixed(1)}</span>
+                  <span>Quality {qualityLabel(evaluation.quality)} · {Number(evaluation.quality_score).toFixed(1)}</span>
+                  <span>Completion {Number(evaluation.completion_score).toFixed(1)}</span>
                 </div>
               ) : null}
+            </div>
 
-              <form action={evaluateClaim} className="form section-sm">
-                <input type="hidden" name="claim_id" value={claim.id} />
-                <input type="hidden" name="return_page" value={currentPage} />
-                <div className="form-row">
-                  <div className="field"><label>Decision</label><select name="decision" defaultValue={evaluation?.decision || "approved"}><option value="approved">Approved</option><option value="revision">Revision</option><option value="rejected">Rejected</option></select></div>
-                  <div className="field"><label>Quality</label><select name="quality" defaultValue={evaluation?.quality || "sesuai_arahan"}>{QUALITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label} · {item.score}</option>)}</select></div>
+            <form action={evaluateClaim} className="form" style={{ minWidth: 0, minHeight: 0, height: "100%", display: "flex", flexDirection: "column", gap: 9 }}>
+              <input type="hidden" name="claim_id" value={claim.id} />
+              <input type="hidden" name="return_page" value={currentPage} />
+
+              <div className="form-row" style={{ flex: "0 0 auto" }}>
+                <div className="field">
+                  <label>Decision</label>
+                  <select name="decision" defaultValue={evaluation?.decision || "approved"}>
+                    <option value="approved">Approved</option>
+                    <option value="revision">Revision</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
                 </div>
-                <div className="field"><label>Feedback</label><textarea name="feedback" maxLength={1600} defaultValue={evaluation?.feedback || ""} /></div>
-                <small className="muted">Skor final dihitung otomatis setelah evaluasi disimpan.</small>
-                <button className="btn" type="submit">Simpan Evaluasi</button>
-              </form>
-            </section>
-          ) : null}
+                <div className="field">
+                  <label>Quality</label>
+                  <select name="quality" defaultValue={evaluation?.quality || "sesuai_arahan"}>
+                    {QUALITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label} · {item.score}</option>)}
+                  </select>
+                </div>
+              </div>
 
-          <div className="section-sm" style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-            {currentPage > 1 ? <a className="btn secondary" href={`/reviews?page=${currentPage - 1}`}>← KPI sebelumnya</a> : <span />}
-            {currentPage < claims.length ? <a className="btn" href={`/reviews?page=${currentPage + 1}`}>KPI berikutnya →</a> : <span className="badge">Semua aktivitas sudah di halaman terakhir</span>}
+              <div className="field" style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
+                <label>Feedback</label>
+                <textarea name="feedback" maxLength={1600} defaultValue={evaluation?.feedback || ""} style={{ flex: "1 1 auto", minHeight: 100, resize: "none" }} />
+              </div>
+
+              <small className="muted" style={{ flex: "0 0 auto" }}>Skor final dihitung otomatis setelah evaluasi disimpan.</small>
+              <button className="btn" type="submit" style={{ flex: "0 0 auto" }}>Simpan Evaluasi</button>
+            </form>
           </div>
-        </>
+        </section>
       ) : <div className="card empty">Belum ada submission untuk direview.</div>}
-    </>
+    </div>
   );
 }
