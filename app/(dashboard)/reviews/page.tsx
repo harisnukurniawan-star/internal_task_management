@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FlashMessage, type FlashParams } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -100,12 +101,12 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         <FlashMessage params={params} />
 
         <div className="page-tabs" style={{ marginBottom: 8 }}>
-          <a className={`page-tab ${activeTab === "validation" ? "active" : ""}`} href="/reviews?tab=validation&page=1">
+          <Link prefetch className={`page-tab ${activeTab === "validation" ? "active" : ""}`} href="/reviews?tab=validation&page=1">
             Validation ({validationClaims.length})
-          </a>
-          <a className={`page-tab ${activeTab === "evaluation" ? "active" : ""}`} href="/reviews?tab=evaluation&page=1">
+          </Link>
+          <Link prefetch className={`page-tab ${activeTab === "evaluation" ? "active" : ""}`} href="/reviews?tab=evaluation&page=1">
             Evaluation Complete ({completedClaims.length})
-          </a>
+          </Link>
         </div>
 
         {activeTab === "validation" ? (
@@ -136,12 +137,12 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
               </div>
 
               {isEditMode ? (
-                <a className="btn secondary" href="/reviews?tab=evaluation&page=1">Batal edit</a>
+                <Link prefetch className="btn secondary" href="/reviews?tab=evaluation&page=1">Batal edit</Link>
               ) : (
                 <div style={{ display: "flex", gap: 7, alignItems: "center", flex: "0 0 auto" }}>
-                  {currentPage > 1 ? <a className="btn secondary" href={`/reviews?tab=validation&page=${currentPage - 1}`}>← Sebelumnya</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
+                  {currentPage > 1 ? <Link prefetch className="btn secondary" href={`/reviews?tab=validation&page=${currentPage - 1}`}>← Sebelumnya</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
                   <span className="badge">{currentPage} / {validationClaims.length}</span>
-                  {currentPage < validationClaims.length ? <a className="btn secondary" href={`/reviews?tab=validation&page=${currentPage + 1}`}>Berikutnya →</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
+                  {currentPage < validationClaims.length ? <Link prefetch className="btn secondary" href={`/reviews?tab=validation&page=${currentPage + 1}`}>Berikutnya →</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
                 </div>
               )}
             </div>
@@ -275,7 +276,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                           <summary aria-label="Menu evaluasi" style={{ listStyle: "none", cursor: "pointer", fontSize: 22, lineHeight: 1, padding: "2px 8px", color: "var(--navy)", userSelect: "none" }}>⋮</summary>
                           <div style={{ position: "absolute", right: 0, top: 28, zIndex: 30, minWidth: 150, padding: 5, border: "1px solid var(--line)", borderRadius: 9, background: "white", boxShadow: "0 8px 24px #18213d24", textAlign: "left" }}>
                             {canEdit ? (
-                              <a href={`/reviews?tab=validation&edit=${item.id}`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontSize: 12, fontWeight: 700, color: "var(--navy)" }}>Edit validation</a>
+                              <Link prefetch href={`/reviews?tab=validation&edit=${item.id}`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontSize: 12, fontWeight: 700, color: "var(--navy)" }}>Edit validation</Link>
                             ) : (
                               <span className="muted small" style={{ display: "block", padding: "8px 10px" }}>Riwayat versi lama · view only</span>
                             )}
@@ -290,9 +291,9 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, paddingTop: 10, flex: "0 0 auto" }}>
-            {historyPage > 1 ? <a className="btn secondary" href={`/reviews?tab=evaluation&page=${historyPage - 1}`}>← Sebelumnya</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
+            {historyPage > 1 ? <Link prefetch className="btn secondary" href={`/reviews?tab=evaluation&page=${historyPage - 1}`}>← Sebelumnya</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
             <span className="badge">{historyPage} / {historyTotalPages}</span>
-            {historyPage < historyTotalPages ? <a className="btn secondary" href={`/reviews?tab=evaluation&page=${historyPage + 1}`}>Berikutnya →</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
+            {historyPage < historyTotalPages ? <Link prefetch className="btn secondary" href={`/reviews?tab=evaluation&page=${historyPage + 1}`}>Berikutnya →</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
           </div>
         </section>
       )}
