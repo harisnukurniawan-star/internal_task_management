@@ -22,6 +22,12 @@ function jump(path: string, type: "ok" | "error" | "warning", message: string): 
   throw new Error("Redirect failed");
 }
 
+function reviewJump(page: number, type: "ok" | "error", message: string): never {
+  const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
+  redirect(`/reviews?page=${safePage}&${type}=${encodeURIComponent(message)}`);
+  throw new Error("Redirect failed");
+}
+
 export async function createTask(formData: FormData) {
   const { supabase, profile } = await requireProfile();
   if (!["admin", "supervisor"].includes(profile.role)) jump("/dashboard", "error", "Akses Supervisor diperlukan.");
@@ -190,6 +196,8 @@ export async function submitClaim(formData: FormData) {
 
 export async function evaluateClaim(formData: FormData) {
   const { supabase, profile } = await requireProfile();
+  const returnPageRaw = Number.parseInt(String(formData.get("return_page") || "1"), 10);
+  const returnPage = Number.isFinite(returnPageRaw) && returnPageRaw > 0 ? returnPageRaw : 1;
   if (!["admin", "supervisor"].includes(profile.role)) jump("/dashboard", "error", "Akses Supervisor diperlukan.");
 
   const claimId = String(formData.get("claim_id") || "").trim();
@@ -198,10 +206,10 @@ export async function evaluateClaim(formData: FormData) {
   const feedback = String(formData.get("feedback") || "").trim() || null;
 
   if (!claimId || !ALLOWED_DECISIONS.has(decision)) {
-    jump("/reviews", "error", "Submission atau keputusan tidak valid.");
+    reviewJump(returnPage, "error", "Submission atau keputusan tidak valid.");
   }
   if (!ALLOWED_QUALITIES.has(quality)) {
-    jump("/reviews", "error", "Penilaian Quality tidak valid.");
+    reviewJump(returnPage, "error", "Penilaian Quality tidak valid.");
   }
 
   const { data: claim } = await supabase
@@ -209,7 +217,7 @@ export async function evaluateClaim(formData: FormData) {
     .select("id,task_id")
     .eq("id", claimId)
     .maybeSingle();
-  if (!claim) jump("/reviews", "error", "Submission tidak ditemukan.");
+  if (!claim) reviewJump(returnPage, "error", "Submission tidak ditemukan.");
 
   const { data: latestClaims } = await supabase
     .from("task_claims")
@@ -218,7 +226,7 @@ export async function evaluateClaim(formData: FormData) {
     .order("version", { ascending: false })
     .limit(1);
   if (latestClaims?.[0]?.id !== claimId) {
-    jump("/reviews", "error", "Submission ini bukan versi terbaru.");
+    reviewJump(returnPage, "error", "Submission ini bukan versi terbaru.");
   }
 
   const { data: evaluation, error } = await supabase.from("task_evaluations").upsert(
@@ -232,12 +240,12 @@ export async function evaluateClaim(formData: FormData) {
     },
     { onConflict: "claim_id" },
   ).select("score,complexity_score,timeliness_score,quality_score,completion_score").single();
-  if (error || !evaluation) jump("/reviews", "error", "Evaluasi gagal disimpan.");
+  if (error || !evaluation) reviewJump(returnPage, "error", "Evaluasi gagal disimpan.");
 
   revalidatePath("/reviews");
   revalidatePath("/my-tasks");
   revalidatePath("/my-week");
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
-  jump("/reviews", "ok", `Evaluasi berhasil disimpan. Skor aktivitas ${Number(evaluation.score).toFixed(2)}.`);
+  reviewJump(returnPage, "ok", `Evaluasi berhasil disimpan. Skor aktivitas ${Number(evaluation.score).toFixed(2)}.`);
 }
