@@ -30,7 +30,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
     .order("submitted_at", { ascending: false });
 
   const latestByTask = new Map<string, any>();
-  for (const claim of claimRows ?? []) if (!latestByTask.has(claim.task_id)) latestByTask.set(claim.task_id, claim);
+  for (const item of claimRows ?? []) if (!latestByTask.has(item.task_id)) latestByTask.set(item.task_id, item);
   const claims = [...latestByTask.values()];
 
   const requestedPage = Number.parseInt(params.page || "1", 10);
@@ -38,17 +38,20 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
   const claim = claims[currentPage - 1] ?? null;
 
-  const evidence = claim?.evidence_files?.[0] ?? null;
-  let evidenceViewUrl: string | null = null;
-  let evidenceDownloadUrl: string | null = null;
-  if (evidence) {
-    const [viewSigned, downloadSigned] = await Promise.all([
-      supabase.storage.from("task-evidence").createSignedUrl(evidence.storage_path, 300),
-      supabase.storage.from("task-evidence").createSignedUrl(evidence.storage_path, 300, { download: evidence.file_name }),
-    ]);
-    evidenceViewUrl = viewSigned.data?.signedUrl || null;
-    evidenceDownloadUrl = downloadSigned.data?.signedUrl || null;
-  }
+  const rawEvidence = (claim?.evidence_files ?? []).slice(0, 5);
+  const evidenceRows = await Promise.all(
+    rawEvidence.map(async (file: any) => {
+      const [viewSigned, downloadSigned] = await Promise.all([
+        supabase.storage.from("task-evidence").createSignedUrl(file.storage_path, 300),
+        supabase.storage.from("task-evidence").createSignedUrl(file.storage_path, 300, { download: file.file_name }),
+      ]);
+      return {
+        ...file,
+        viewUrl: viewSigned.data?.signedUrl || null,
+        downloadUrl: downloadSigned.data?.signedUrl || null,
+      };
+    }),
+  );
 
   const evaluation = claim?.task_evaluations;
   const kpi = relationOne(claim?.tasks?.employee_kpis);
@@ -93,6 +96,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 <strong>Support KPI</strong><br />
                 {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
               </div>
+
               <div className="notice neutral" style={{ margin: 0, padding: "8px 10px" }}>
                 <strong>Support Tupoksi</strong><br />
                 {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
@@ -122,23 +126,33 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 </div>
               ) : null}
 
-              <div className="submission-box" style={{ marginTop: "auto", padding: 10 }}>
-                <div className="card-head" style={{ alignItems: "center" }}>
-                  <div style={{ minWidth: 0 }}>
-                    <strong>Evidence</strong>
-                    {evidence ? (
-                      <div className="muted small" style={{ marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {evidence.file_name} · {formatBytes(evidence.file_size)} · Completion 100
-                      </div>
-                    ) : <div className="muted small" style={{ marginTop: 4 }}>Belum ada evidence · Completion 0</div>}
-                  </div>
-                  {evidence ? (
-                    <div style={{ display: "flex", gap: 7, flex: "0 0 auto" }}>
-                      {evidenceViewUrl ? <a className="btn secondary" href={evidenceViewUrl} target="_blank" rel="noreferrer" aria-label="View evidence">👁 View</a> : null}
-                      {evidenceDownloadUrl ? <a className="btn" href={evidenceDownloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
-                    </div>
-                  ) : null}
+              <div style={{ marginTop: "auto", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "white" }}>
+                <div style={{ background: "var(--blue-soft)", padding: "8px 10px", borderBottom: "1px solid var(--line)" }}>
+                  <strong>Evidence</strong>
                 </div>
+
+                {evidenceRows.length > 0 ? (
+                  <div style={{ background: "white" }}>
+                    {evidenceRows.map((file: any, index: number) => (
+                      <div key={`${file.storage_path}-${index}`} style={{ minHeight: 42, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "white", borderBottom: index < evidenceRows.length - 1 ? "1px solid var(--line)" : "0" }}>
+                        <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                          <span className="badge" style={{ flex: "0 0 auto" }}>#{index + 1}</span>
+                          <div className="small" style={{ minWidth: 0 }}>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>{file.file_name}</div>
+                            <div className="muted" style={{ marginTop: 2 }}>{formatBytes(file.file_size)} · Completion 100</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
+                          {file.viewUrl ? <a className="btn secondary" style={{ padding: "6px 9px" }} href={file.viewUrl} target="_blank" rel="noreferrer" aria-label={`View ${file.file_name}`}>👁 View</a> : null}
+                          {file.downloadUrl ? <a className="btn" style={{ padding: "6px 9px" }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="muted small" style={{ padding: "10px", background: "white" }}>Belum ada evidence · Completion 0</div>
+                )}
               </div>
             </div>
 
