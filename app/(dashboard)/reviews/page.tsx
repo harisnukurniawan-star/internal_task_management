@@ -5,7 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import { QUALITY_OPTIONS, TIMELINESS_RULE, complexityLabel, qualityLabel } from "@/lib/scoring";
 import { evaluateClaim } from "../actions";
 
-type ReviewSearchParams = FlashParams & { page?: string; tab?: string };
+type ReviewSearchParams = FlashParams & { page?: string; tab?: string; edit?: string };
 
 function relationOne(value: any) {
   return Array.isArray(value) ? value[0] : value;
@@ -32,6 +32,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   if (!["admin", "supervisor"].includes(profile.role)) return <p>Unauthorized</p>;
 
   const activeTab = params.tab === "evaluation" ? "evaluation" : "validation";
+  const editClaimId = String(params.edit || "").trim();
 
   const { data: claimRows } = await supabase
     .from("task_claims")
@@ -42,19 +43,29 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const latestByTask = new Map<string, any>();
   for (const item of allClaims) if (!latestByTask.has(item.task_id)) latestByTask.set(item.task_id, item);
 
+  const latestClaimIds = new Set([...latestByTask.values()].map((item: any) => item.id));
   const validationClaims = [...latestByTask.values()].filter((item) => !relationOne(item.task_evaluations));
   const completedClaims = allClaims.filter((item) => Boolean(relationOne(item.task_evaluations)));
 
   const requestedPage = Number.parseInt(params.page || "1", 10);
-
   let currentPage = 1;
   let claim: any = null;
   let evidenceRows: any[] = [];
+  let isEditMode = false;
 
   if (activeTab === "validation") {
-    const totalPages = Math.max(1, validationClaims.length);
-    currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
-    claim = validationClaims[currentPage - 1] ?? null;
+    const editableHistoryClaim = editClaimId
+      ? completedClaims.find((item: any) => item.id === editClaimId && latestClaimIds.has(item.id))
+      : null;
+
+    if (editableHistoryClaim) {
+      claim = editableHistoryClaim;
+      isEditMode = true;
+    } else {
+      const totalPages = Math.max(1, validationClaims.length);
+      currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
+      claim = validationClaims[currentPage - 1] ?? null;
+    }
 
     const rawEvidence = (claim?.evidence_files ?? []).slice(0, 5);
     evidenceRows = await Promise.all(
@@ -98,18 +109,22 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
         </div>
 
         {activeTab === "validation" ? (
-          <div className="notice neutral" style={{ marginBottom: 0, padding: "7px 10px" }}><strong>Ketepatan waktu:</strong> {TIMELINESS_RULE}</div>
+          <div className="notice neutral" style={{ marginBottom: 0, padding: "7px 10px" }}>
+            <strong>{isEditMode ? "Edit validation:" : "Ketepatan waktu:"}</strong>{" "}
+            {isEditMode ? "Perbarui hasil evaluasi submission terbaru. Riwayat versi lama tetap terkunci." : TIMELINESS_RULE}
+          </div>
         ) : null}
       </div>
 
       {activeTab === "validation" ? (
-        validationClaims.length > 0 && claim ? (
+        claim ? (
           <section className="card compact" style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", padding: 12, display: "flex", flexDirection: "column" }}>
             <div className="card-head" style={{ alignItems: "center", flex: "0 0 auto", paddingBottom: 9, borderBottom: "1px solid var(--line)" }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <strong style={{ fontSize: 16 }}>{claim.tasks?.title}</strong>
                   <StatusBadge status={claim.tasks?.status || "submitted"} />
+                  {isEditMode ? <span className="badge">Edit validation</span> : null}
                 </div>
                 <div className="task-meta" style={{ marginTop: 5 }}>
                   <span>{claim.employees?.full_name}</span>
@@ -120,11 +135,15 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 7, alignItems: "center", flex: "0 0 auto" }}>
-                {currentPage > 1 ? <a className="btn secondary" href={`/reviews?tab=validation&page=${currentPage - 1}`}>← Sebelumnya</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
-                <span className="badge">{currentPage} / {validationClaims.length}</span>
-                {currentPage < validationClaims.length ? <a className="btn secondary" href={`/reviews?tab=validation&page=${currentPage + 1}`}>Berikutnya →</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
-              </div>
+              {isEditMode ? (
+                <a className="btn secondary" href="/reviews?tab=evaluation&page=1">Batal edit</a>
+              ) : (
+                <div style={{ display: "flex", gap: 7, alignItems: "center", flex: "0 0 auto" }}>
+                  {currentPage > 1 ? <a className="btn secondary" href={`/reviews?tab=validation&page=${currentPage - 1}`}>← Sebelumnya</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
+                  <span className="badge">{currentPage} / {validationClaims.length}</span>
+                  {currentPage < validationClaims.length ? <a className="btn secondary" href={`/reviews?tab=validation&page=${currentPage + 1}`}>Berikutnya →</a> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
+                </div>
+              )}
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.08fr) minmax(380px,.92fr)", gap: 14, flex: "1 1 auto", minHeight: 0, paddingTop: 10 }}>
@@ -157,28 +176,22 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   <div style={{ background: "var(--blue-soft)", padding: "8px 10px", borderBottom: "1px solid var(--line)", flex: "0 0 auto" }}>
                     <strong>Evidence</strong>
                   </div>
-
                   <div style={{ flex: "1 1 auto", minHeight: 0, background: "white", overflowY: "auto" }}>
-                    {evidenceRows.length > 0 ? (
-                      evidenceRows.map((file: any, index: number) => (
-                        <div key={`${file.storage_path}-${index}`} style={{ minHeight: 46, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "white", borderBottom: index < evidenceRows.length - 1 ? "1px solid var(--line)" : "0" }}>
-                          <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                            <span className="badge" style={{ flex: "0 0 auto" }}>#{index + 1}</span>
-                            <div className="small" style={{ minWidth: 0 }}>
-                              <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>{file.file_name}</div>
-                              <div className="muted" style={{ marginTop: 2 }}>{formatBytes(file.file_size)} · Completion 100</div>
-                            </div>
-                          </div>
-
-                          <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
-                            {file.viewUrl ? <a className="btn secondary" style={{ padding: "6px 9px" }} href={file.viewUrl} target="_blank" rel="noreferrer" aria-label={`View ${file.file_name}`}>👁 View</a> : null}
-                            {file.downloadUrl ? <a className="btn" style={{ padding: "6px 9px" }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
+                    {evidenceRows.length > 0 ? evidenceRows.map((file: any, index: number) => (
+                      <div key={`${file.storage_path}-${index}`} style={{ minHeight: 46, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "white", borderBottom: index < evidenceRows.length - 1 ? "1px solid var(--line)" : "0" }}>
+                        <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
+                          <span className="badge" style={{ flex: "0 0 auto" }}>#{index + 1}</span>
+                          <div className="small" style={{ minWidth: 0 }}>
+                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>{file.file_name}</div>
+                            <div className="muted" style={{ marginTop: 2 }}>{formatBytes(file.file_size)} · Completion 100</div>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="muted small" style={{ padding: "10px", background: "white" }}>Belum ada evidence · Completion 0</div>
-                    )}
+                        <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
+                          {file.viewUrl ? <a className="btn secondary" style={{ padding: "6px 9px" }} href={file.viewUrl} target="_blank" rel="noreferrer">👁 View</a> : null}
+                          {file.downloadUrl ? <a className="btn" style={{ padding: "6px 9px" }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
+                        </div>
+                      </div>
+                    )) : <div className="muted small" style={{ padding: 10 }}>Belum ada evidence · Completion 0</div>}
                   </div>
                 </div>
               </div>
@@ -190,7 +203,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 <div className="form-row" style={{ flex: "0 0 auto" }}>
                   <div className="field">
                     <label>Decision</label>
-                    <select name="decision" defaultValue="approved">
+                    <select name="decision" defaultValue={evaluation?.decision || "approved"}>
                       <option value="approved">Approved</option>
                       <option value="revision">Revision</option>
                       <option value="rejected">Rejected</option>
@@ -198,7 +211,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   </div>
                   <div className="field">
                     <label>Quality</label>
-                    <select name="quality" defaultValue="sesuai_arahan">
+                    <select name="quality" defaultValue={evaluation?.quality || "sesuai_arahan"}>
                       {QUALITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label} · {item.score}</option>)}
                     </select>
                   </div>
@@ -206,18 +219,16 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
 
                 <div className="field" style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
                   <label>Feedback</label>
-                  <textarea name="feedback" maxLength={1600} style={{ flex: "1 1 auto", minHeight: 100, resize: "none" }} />
+                  <textarea name="feedback" maxLength={1600} defaultValue={evaluation?.feedback || ""} style={{ flex: "1 1 auto", minHeight: 100, resize: "none" }} />
                 </div>
 
-                <small className="muted" style={{ flex: "0 0 auto" }}>Skor final dihitung otomatis setelah evaluasi disimpan.</small>
-                <button className="btn" type="submit" style={{ flex: "0 0 auto" }}>Simpan Evaluasi</button>
+                <small className="muted" style={{ flex: "0 0 auto" }}>{isEditMode ? "Perubahan akan memperbarui evaluasi ini tanpa membuat duplikat." : "Skor final dihitung otomatis setelah evaluasi disimpan."}</small>
+                <button className="btn" type="submit" style={{ flex: "0 0 auto" }}>{isEditMode ? "Simpan Perubahan Evaluasi" : "Simpan Evaluasi"}</button>
               </form>
             </div>
           </section>
         ) : (
-          <div className="card empty" style={{ flex: "1 1 auto" }}>
-            Tidak ada submission yang menunggu validasi. Submission baru dari bawahan akan otomatis muncul di tab ini.
-          </div>
+          <div className="card empty" style={{ flex: "1 1 auto" }}>Tidak ada submission yang menunggu validasi.</div>
         )
       ) : (
         <section className="card compact" style={{ flex: "1 1 auto", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -241,12 +252,14 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   <th>Quality</th>
                   <th>Final Score</th>
                   <th>Evaluated</th>
+                  <th style={{ width: 58, textAlign: "center" }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {historyRows.map((item: any) => {
                   const itemEval = relationOne(item.task_evaluations);
                   const itemKpi = relationOne(item.tasks?.employee_kpis);
+                  const canEdit = latestClaimIds.has(item.id);
                   return (
                     <tr key={item.id}>
                       <td><strong>{item.tasks?.title}</strong></td>
@@ -257,6 +270,18 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                       <td>{qualityLabel(itemEval?.quality)}</td>
                       <td><strong>{Number(itemEval?.score || 0).toFixed(2)}</strong></td>
                       <td>{itemEval?.evaluated_at ? new Date(itemEval.evaluated_at).toLocaleString("id-ID") : "-"}</td>
+                      <td style={{ textAlign: "center", overflow: "visible" }}>
+                        <details style={{ position: "relative", display: "inline-block" }}>
+                          <summary aria-label="Menu evaluasi" style={{ listStyle: "none", cursor: "pointer", fontSize: 22, lineHeight: 1, padding: "2px 8px", color: "var(--navy)", userSelect: "none" }}>⋮</summary>
+                          <div style={{ position: "absolute", right: 0, top: 28, zIndex: 30, minWidth: 150, padding: 5, border: "1px solid var(--line)", borderRadius: 9, background: "white", boxShadow: "0 8px 24px #18213d24", textAlign: "left" }}>
+                            {canEdit ? (
+                              <a href={`/reviews?tab=validation&edit=${item.id}`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontSize: 12, fontWeight: 700, color: "var(--navy)" }}>Edit validation</a>
+                            ) : (
+                              <span className="muted small" style={{ display: "block", padding: "8px 10px" }}>Riwayat versi lama · view only</span>
+                            )}
+                          </div>
+                        </details>
+                      </td>
                     </tr>
                   );
                 })}
