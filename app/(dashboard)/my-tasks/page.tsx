@@ -17,8 +17,10 @@ function tupoksiFor(task: any) {
 export default async function MyTasksPage({ searchParams }: { searchParams: Promise<FlashParams> }) {
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
-  const employee = await getEmployeeForProfile(profile.id);
-  const period = await getCurrentPeriod();
+  const [employee, period] = await Promise.all([
+    getEmployeeForProfile(profile.id, supabase),
+    getCurrentPeriod(supabase),
+  ]);
   if (!employee) return <p>Employee profile belum ditautkan.</p>;
 
   let taskQuery = supabase
@@ -34,18 +36,10 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
   if (taskIds.length > 0) {
     const { data: claimRows } = await supabase
       .from("task_claims")
-      .select("id,task_id,version,realization_summary,completion_percent,progress_status,employee_comment,submitted_at,task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name,file_size,storage_path)")
+      .select("id,task_id,version,realization_summary,completion_percent,progress_status,employee_comment,submitted_at,task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name)")
       .in("task_id", taskIds)
       .order("version", { ascending: false });
     for (const claim of claimRows ?? []) if (!latestByTask.has(claim.task_id)) latestByTask.set(claim.task_id, claim);
-  }
-
-  const evidenceLinks = new Map<string, string>();
-  for (const claim of latestByTask.values()) {
-    const evidence = claim.evidence_files?.[0];
-    if (!evidence) continue;
-    const signed = await supabase.storage.from("task-evidence").createSignedUrl(evidence.storage_path, 300, { download: evidence.file_name });
-    if (signed.data?.signedUrl) evidenceLinks.set(claim.id, signed.data.signedUrl);
   }
 
   return (
@@ -114,6 +108,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
           const canSubmit = ["assigned", "in_progress", "revision"].includes(task.status);
           const kpi = kpiFor(task);
           const tupoksi = tupoksiFor(task);
+          const hasEvidence = (claim?.evidence_files?.length ?? 0) > 0;
 
           return (
             <details className="task-accordion" name="employee-task" key={task.id}>
@@ -140,7 +135,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                     <div className="task-meta"><span>Submission v{claim.version}</span><span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span></div>
                     <p><strong>Realisasi:</strong> {Number(claim.completion_percent).toFixed(0)}% · {claim.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai"}</p>
                     {claim.employee_comment ? <p><strong>Keterangan:</strong> {claim.employee_comment}</p> : null}
-                    {evidenceLinks.get(claim.id) ? <a className="evidence-link" href={evidenceLinks.get(claim.id)} target="_blank" rel="noreferrer">Buka evidence</a> : <span className="muted small">Belum ada evidence</span>}
+                    {hasEvidence ? <a className="evidence-link" href={`/evidence/${claim.id}`} target="_blank" rel="noreferrer">Buka evidence</a> : <span className="muted small">Belum ada evidence</span>}
                     {evaluation ? (
                       <div className={`feedback ${evaluation.decision}`}>
                         <strong>{evaluation.decision === "revision" ? "Perlu revisi" : evaluation.decision}</strong>
