@@ -35,9 +35,11 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const activeTab = params.tab === "evaluation" ? "evaluation" : "validation";
   const editClaimId = String(params.edit || "").trim();
 
+  // Lightweight index query for counts, pagination, and history.
+  // Heavy claim/evidence fields are fetched only for the one validation item being viewed.
   const { data: claimRows } = await supabase
     .from("task_claims")
-    .select("id,task_id,version,realization_summary,completion_percent,progress_status,employee_comment,submitted_at,tasks(title,status,complexity,due_at,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)),employees(full_name),task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name,file_size,storage_path)")
+    .select("id,task_id,version,submitted_at,tasks(title,status,complexity,due_at,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description)),employees(full_name),task_evaluations(decision,quality,score,evaluated_at)")
     .order("submitted_at", { ascending: false });
 
   const allClaims = claimRows ?? [];
@@ -59,13 +61,23 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
       ? completedClaims.find((item: any) => item.id === editClaimId && latestClaimIds.has(item.id))
       : null;
 
+    let selectedClaimMeta: any = null;
     if (editableHistoryClaim) {
-      claim = editableHistoryClaim;
+      selectedClaimMeta = editableHistoryClaim;
       isEditMode = true;
     } else {
       const totalPages = Math.max(1, validationClaims.length);
       currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
-      claim = validationClaims[currentPage - 1] ?? null;
+      selectedClaimMeta = validationClaims[currentPage - 1] ?? null;
+    }
+
+    if (selectedClaimMeta) {
+      const { data: claimDetail } = await supabase
+        .from("task_claims")
+        .select("id,task_id,version,realization_summary,completion_percent,progress_status,employee_comment,submitted_at,tasks(title,status,complexity,due_at,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)),employees(full_name),task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name,file_size,storage_path)")
+        .eq("id", selectedClaimMeta.id)
+        .maybeSingle();
+      claim = claimDetail ?? selectedClaimMeta;
     }
 
     const rawEvidence = (claim?.evidence_files ?? []).slice(0, 5);
