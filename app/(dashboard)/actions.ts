@@ -24,7 +24,7 @@ function jump(path: string, type: "ok" | "error" | "warning", message: string): 
 
 function reviewJump(page: number, type: "ok" | "error", message: string): never {
   const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
-  redirect(`/reviews?page=${safePage}&${type}=${encodeURIComponent(message)}`);
+  redirect(`/reviews?tab=validation&page=${safePage}&${type}=${encodeURIComponent(message)}`);
   throw new Error("Redirect failed");
 }
 
