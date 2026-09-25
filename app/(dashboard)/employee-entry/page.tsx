@@ -13,13 +13,11 @@ export default async function EmployeeEntryReviewPage({
   const { supabase, profile } = await requireProfile();
   if (profile.role !== "admin") return <p>Unauthorized</p>;
 
-  const period = await getCurrentPeriod();
-  const { data: employeeRows } = await supabase
-    .from("employees")
-    .select("id,full_name")
-    .eq("active", true)
-    .order("display_order");
-  const employees = employeeRows ?? [];
+  const [period, employeeResult] = await Promise.all([
+    getCurrentPeriod(supabase),
+    supabase.from("employees").select("id,full_name").eq("active", true).order("display_order"),
+  ]);
+  const employees = employeeResult.data ?? [];
   const selectedEmployeeId = employees.some((item) => item.id === params.employee_id)
     ? params.employee_id!
     : employees[0]?.id;
@@ -41,22 +39,12 @@ export default async function EmployeeEntryReviewPage({
   if (taskIds.length > 0) {
     const { data: claimRows } = await supabase
       .from("task_claims")
-      .select("id,task_id,version,realization_summary,submitted_at,task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name,file_size,storage_path)")
+      .select("id,task_id,version,realization_summary,submitted_at,task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name)")
       .in("task_id", taskIds)
       .order("version", { ascending: false });
     for (const claim of claimRows ?? []) {
       if (!latestByTask.has(claim.task_id)) latestByTask.set(claim.task_id, claim);
     }
-  }
-
-  const evidenceLinks = new Map<string, string>();
-  for (const claim of latestByTask.values()) {
-    const evidence = claim.evidence_files?.[0];
-    if (!evidence) continue;
-    const signed = await supabase.storage
-      .from("task-evidence")
-      .createSignedUrl(evidence.storage_path, 300, { download: evidence.file_name });
-    if (signed.data?.signedUrl) evidenceLinks.set(claim.id, signed.data.signedUrl);
   }
 
   return (
@@ -98,7 +86,7 @@ export default async function EmployeeEntryReviewPage({
         {tasks.map((task) => {
           const claim = latestByTask.get(task.id);
           const evaluation = claim?.task_evaluations;
-          const evidenceUrl = claim ? evidenceLinks.get(claim.id) : undefined;
+          const hasEvidence = (claim?.evidence_files?.length ?? 0) > 0;
           const employeeCanSubmit = ["assigned", "in_progress", "revision"].includes(task.status);
 
           return (
@@ -121,8 +109,8 @@ export default async function EmployeeEntryReviewPage({
                     <span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span>
                   </div>
                   <p>{claim.realization_summary}</p>
-                  {evidenceUrl ? (
-                    <a className="evidence-link" href={evidenceUrl} target="_blank" rel="noreferrer">
+                  {hasEvidence ? (
+                    <a className="evidence-link" href={`/evidence/${claim.id}`} target="_blank" rel="noreferrer">
                       Buka evidence pegawai
                     </a>
                   ) : (
