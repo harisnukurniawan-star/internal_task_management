@@ -126,15 +126,15 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 </div>
               ) : null}
 
-              <div style={{ marginTop: "auto", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "white" }}>
-                <div style={{ background: "var(--blue-soft)", padding: "8px 10px", borderBottom: "1px solid var(--line)" }}>
+              <div style={{ flex: "1 1 auto", minHeight: 0, border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "white", display: "flex", flexDirection: "column" }}>
+                <div style={{ background: "var(--blue-soft)", padding: "8px 10px", borderBottom: "1px solid var(--line)", flex: "0 0 auto" }}>
                   <strong>Evidence</strong>
                 </div>
 
-                {evidenceRows.length > 0 ? (
-                  <div style={{ background: "white" }}>
-                    {evidenceRows.map((file: any, index: number) => (
-                      <div key={`${file.storage_path}-${index}`} style={{ minHeight: 42, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "white", borderBottom: index < evidenceRows.length - 1 ? "1px solid var(--line)" : "0" }}>
+                <div style={{ flex: "1 1 auto", minHeight: 0, background: "white", overflowY: evidenceRows.length > 5 ? "auto" : "hidden" }}>
+                  {evidenceRows.length > 0 ? (
+                    evidenceRows.map((file: any, index: number) => (
+                      <div key={`${file.storage_path}-${index}`} style={{ minHeight: 46, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "white", borderBottom: index < evidenceRows.length - 1 ? "1px solid var(--line)" : "0" }}>
                         <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
                           <span className="badge" style={{ flex: "0 0 auto" }}>#{index + 1}</span>
                           <div className="small" style={{ minWidth: 0 }}>
@@ -148,11 +148,11 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                           {file.downloadUrl ? <a className="btn" style={{ padding: "6px 9px" }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="muted small" style={{ padding: "10px", background: "white" }}>Belum ada evidence · Completion 0</div>
-                )}
+                    ))
+                  ) : (
+                    <div className="muted small" style={{ padding: "10px", background: "white" }}>Belum ada evidence · Completion 0</div>
+                  )}
+                </div>
               </div>
             </div>
 
