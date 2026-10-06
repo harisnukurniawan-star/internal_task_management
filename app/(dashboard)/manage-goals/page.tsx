@@ -157,7 +157,11 @@ export default async function ManageGoalsPMGMPage({
   const months = Array.from({ length: 6 }, (_, index) => semester.startMonth + index);
   const finalMonth = months[months.length - 1];
 
-  function monthlyCompletion(kpiId: string, month: number) {
+  function monthlyMetric(
+    kpiId: string,
+    month: number,
+    field: "score" | "quality" | "timeliness" | "completion" | "complexity",
+  ) {
     if (!isTrackingMonth(semester.year, month)) return null;
     const rows = approvedMetricsByKpi.get(kpiId) ?? [];
     const eligible = rows.filter((item) => {
@@ -165,10 +169,12 @@ export default async function ManageGoalsPMGMPage({
       return Number(yearText) === semester.year && Number(monthText) === month;
     });
     if (eligible.length === 0) return null;
+
     const values = eligible
-      .map((item) => item.completion)
+      .map((item) => item[field])
       .filter((value) => Number.isFinite(value))
       .map((value) => Math.min(100, Math.max(0, value)));
+
     if (values.length === 0) return null;
     return values.reduce((sum, value) => sum + value, 0) / values.length;
   }
@@ -311,7 +317,7 @@ export default async function ManageGoalsPMGMPage({
           </Link>
           <div className="pmgm-complete">● {kpis.length} KPI terpetakan</div>
           <div className="pmgm-notice">
-            Mulai Bulan ke-3 (September 2026): T = 100%. R = rata-rata Completion hasil Validation dari seluruh aktivitas versi terbaru yang sudah Approved dan terhubung ke Support KPI tersebut, dikelompokkan berdasarkan bulan deadline aktivitas.
+            Mulai Bulan ke-3 (September 2026): setiap task versi terbaru yang sudah Approved masuk ke bucket Support KPI + bulan deadline. Completion, Waktu, dan Kualitas masing-masing dihitung sebagai rata-rata seluruh aktivitas pada KPI dan bulan yang sama. T Completion = 100%.
           </div>
         </section>
 
@@ -374,7 +380,7 @@ export default async function ManageGoalsPMGMPage({
                   <td style={{ textAlign: "center" }}>1</td>
                   {months.map((month) => {
                     const tracked = isTrackingMonth(semester.year, month);
-                    const realization = monthlyCompletion(kpi.id, month);
+                    const realization = monthlyMetric(kpi.id, month, "completion");
                     const target = tracked ? 100 : null;
                     return (
                       <td key={month}>
@@ -386,15 +392,17 @@ export default async function ManageGoalsPMGMPage({
                     );
                   })}
                   <td>
-                    <div className="pmgm-month">
-                      <span><strong>T:</strong>100</span>
-                      <span><strong>R:</strong>{formatScore(cumulativeMetric(kpi.id, finalMonth, "quality"))}</span>
+                    <div className="pmgm-month" style={{ gap: 4 }}>
+                      {months.filter((month) => isTrackingMonth(semester.year, month)).map((month) => (
+                        <span key={month}><strong>B{month - semester.startMonth + 1}:</strong>{formatScore(monthlyMetric(kpi.id, month, "quality"))}</span>
+                      ))}
                     </div>
                   </td>
                   <td>
-                    <div className="pmgm-month">
-                      <span><strong>T:</strong>100</span>
-                      <span><strong>R:</strong>{formatScore(cumulativeMetric(kpi.id, finalMonth, "timeliness"))}</span>
+                    <div className="pmgm-month" style={{ gap: 4 }}>
+                      {months.filter((month) => isTrackingMonth(semester.year, month)).map((month) => (
+                        <span key={month}><strong>B{month - semester.startMonth + 1}:</strong>{formatScore(monthlyMetric(kpi.id, month, "timeliness"))}</span>
+                      ))}
                     </div>
                   </td>
                   <td>
