@@ -130,6 +130,9 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         .teamtasks-carry{display:inline-flex;margin-left:5px;padding:2px 5px;border-radius:999px;background:#fffaeb;color:#b54708;font-size:9px;font-weight:800;vertical-align:middle}
         .teamtasks-table .badge{font-size:9px;padding:3px 6px;white-space:nowrap}
         .teamtasks-table .btn{font-size:10px;padding:5px 7px;white-space:nowrap}
+        .teamtasks-table td.teamtasks-action-cell{overflow:visible!important}
+        .teamtasks-action-cell details{position:relative;z-index:25}
+        .teamtasks-action-cell details[open]{z-index:50}
         .teamtasks-pagination{height:34px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
         .teamtasks-pagination .btn{padding:6px 9px;font-size:11px}
         .teamtasks-page .flash-message{margin:0}
@@ -268,7 +271,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                       <td>{task.priority}</td>
                       <td>{complexityLabel(task.complexity)}</td>
                       <td>{task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</td>
-                      <td style={{ textAlign: "center", position: "relative" }}>
+                      <td className="teamtasks-action-cell" style={{ textAlign: "center", position: "relative", overflow: "visible" }}>
                         {isCarryOver ? (
                           task.status === "submitted" ? (
                             <Link prefetch className="btn secondary" href="/reviews?tab=validation&page=1" style={{ padding: "6px 8px", fontSize: 11 }}>Validasi</Link>
