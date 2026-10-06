@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { logout } from "@/app/(auth)/login/actions";
 
@@ -50,13 +49,12 @@ export function AppShell({
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <Image
-            src="/task-manager.png"
+          <img
+            src="/task-manager-clean.svg"
             alt="Task Manager"
             width={2128}
             height={739}
-            sizes="(max-width: 900px) 260px, 182px"
-            priority
+            loading="eager"
             style={{ display: "block", width: "100%", maxWidth: 260, height: "auto" }}
           />
           <small>{name} · {roleLabel}</small>
