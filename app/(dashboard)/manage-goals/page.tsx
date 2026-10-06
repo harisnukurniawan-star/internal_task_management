@@ -284,9 +284,10 @@ export default async function ManageGoalsPMGMPage({
         .pmgm-app-tabs{display:flex;gap:24px;align-items:flex-end;height:38px;padding:0 24px;border-bottom:1px solid var(--line);flex:0 0 auto}
         .pmgm-app-tab{height:38px;display:flex;align-items:center;font-size:12px;font-weight:800;color:#2a3587;border-bottom:2px solid #0a94b7}
         .pmgm-head{padding:12px 24px 10px;background:#f7f7f8;border-bottom:1px solid var(--line);flex:0 0 auto}
-        .pmgm-head-top{display:flex;justify-content:flex-start;gap:12px;align-items:flex-start}
+        .pmgm-head-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
         .pmgm-title{font-size:22px;font-weight:800;color:#111827}
         .pmgm-subtitle{font-size:11px;color:#667085;margin-top:5px}
+        .pmgm-validation-note{max-width:260px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:11px;font-weight:700;color:#344054;line-height:1.35;text-align:center}
         .pmgm-summary{display:flex;align-items:center;gap:20px;padding:12px 24px;background:#fff;border-bottom:1px solid var(--line);flex:0 0 auto}
         .pmgm-total{font-size:24px;font-weight:800;color:#111827}
         .pmgm-total small{font-size:11px;font-weight:700;margin-left:5px}
@@ -351,6 +352,7 @@ export default async function ManageGoalsPMGMPage({
                 {semester.start} – {semester.end} · {selectedEmployee?.full_name || "Pilih pegawai"} · State: Active
               </div>
             </div>
+            <div className="pmgm-validation-note">Sesuai dengan task sudah tervalidasi</div>
           </div>
         </section>
 
