@@ -51,10 +51,10 @@ export function AppShell({
       <aside className="sidebar">
         <div className="brand">
           <Image
-            src="/task-manager-26.png"
-            alt="Task Manager 26"
-            width={2172}
-            height={724}
+            src="/task-manager.png"
+            alt="Task Manager"
+            width={2128}
+            height={739}
             sizes="(max-width: 900px) 260px, 182px"
             priority
             style={{ display: "block", width: "100%", maxWidth: 260, height: "auto" }}
