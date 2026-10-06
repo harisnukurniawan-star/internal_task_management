@@ -59,6 +59,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
             .from("tasks")
             .select(taskSelect)
             .eq("period_id", period.id)
+            .in("status", OPEN_TASK_STATUSES)
             .order("created_at", { ascending: false })
         : Promise.resolve({ data: [] as any[] }),
       supabase
