@@ -10,6 +10,8 @@ import { TaskIdentityFields } from "./support-kpi-fields";
 
 type TaskSearchParams = FlashParams & { edit?: string; tab?: string };
 
+const OPEN_TASK_STATUSES = ["assigned", "in_progress", "submitted", "revision"];
+
 function kpiFor(task: any) {
   return Array.isArray(task.employee_kpis) ? task.employee_kpis[0] : task.employee_kpis;
 }
@@ -45,27 +47,66 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
 
   let tasks: any[] = [];
   const submittedTaskIds = new Set<string>();
+  const periodLabels = new Map<string, string>();
 
-  if (activeTab === "list" && period) {
-    const taskResult = await supabase
-      .from("tasks")
-      .select("id,title,description,status,priority,complexity,due_at,assigned_to,support_kpi_id,support_tupoksi_id,employees!tasks_assigned_to_fkey(full_name),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)")
-      .eq("period_id", period.id)
-      .order("created_at", { ascending: false });
-    tasks = taskResult.data ?? [];
+  if (activeTab === "list") {
+    const taskSelect = "id,period_id,title,description,status,priority,complexity,due_at,assigned_to,support_kpi_id,support_tupoksi_id,created_at,employees!tasks_assigned_to_fkey(full_name),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)";
+
+    const [currentResult, openResult] = await Promise.all([
+      period
+        ? supabase
+            .from("tasks")
+            .select(taskSelect)
+            .eq("period_id", period.id)
+            .order("created_at", { ascending: false })
+        : Promise.resolve({ data: [] as any[] }),
+      supabase
+        .from("tasks")
+        .select(taskSelect)
+        .in("status", OPEN_TASK_STATUSES)
+        .order("due_at", { ascending: true }),
+    ]);
+
+    const taskMap = new Map<string, any>();
+    for (const task of openResult.data ?? []) taskMap.set(task.id, task);
+    for (const task of currentResult.data ?? []) taskMap.set(task.id, task);
+
+    tasks = Array.from(taskMap.values()).sort((a, b) => {
+      const aCarry = period ? a.period_id !== period.id : true;
+      const bCarry = period ? b.period_id !== period.id : true;
+      if (aCarry !== bCarry) return aCarry ? -1 : 1;
+      const aDue = a.due_at ? new Date(a.due_at).getTime() : Number.MAX_SAFE_INTEGER;
+      const bDue = b.due_at ? new Date(b.due_at).getTime() : Number.MAX_SAFE_INTEGER;
+      if (aDue !== bDue) return aDue - bDue;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
 
     const taskIds = tasks.map((task) => task.id);
-    if (taskIds.length > 0) {
-      const claimResult = await supabase.from("task_claims").select("task_id").in("task_id", taskIds);
-      for (const claim of claimResult.data ?? []) submittedTaskIds.add(claim.task_id);
-    }
+    const periodIds = [...new Set(tasks.map((task) => task.period_id).filter(Boolean))];
+
+    const [claimResult, periodResult] = await Promise.all([
+      taskIds.length > 0
+        ? supabase.from("task_claims").select("task_id").in("task_id", taskIds)
+        : Promise.resolve({ data: [] as any[] }),
+      periodIds.length > 0
+        ? supabase.from("weekly_periods").select("id,label").in("id", periodIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    for (const claim of claimResult.data ?? []) submittedTaskIds.add(claim.task_id);
+    for (const item of periodResult.data ?? []) periodLabels.set(item.id, item.label);
   }
 
-  const editTask = params.edit ? tasks.find((task) => task.id === params.edit) : null;
+  const editTask = params.edit
+    ? tasks.find((task) => task.id === params.edit && (!period || task.period_id === period.id))
+    : null;
+  const carryOverCount = period
+    ? tasks.filter((task) => task.period_id !== period.id && OPEN_TASK_STATUSES.includes(task.status)).length
+    : tasks.filter((task) => OPEN_TASK_STATUSES.includes(task.status)).length;
 
   return (
     <>
-      <PageHeader title="Team Tasks" subtitle={period ? `${period.label} · assign dan monitor task minggu berjalan.` : "Periode aktif belum tersedia."} />
+      <PageHeader title="Team Tasks" subtitle={period ? `${period.label} · task minggu berjalan + seluruh task bawahan yang masih open dari periode sebelumnya.` : "Menampilkan seluruh task bawahan yang masih open."} />
       <FlashMessage params={params} />
 
       <nav className="page-tabs" aria-label="Team task sections">
@@ -101,7 +142,12 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         ) : <div className="notice warning tab-panel">Periode aktif belum tersedia sehingga task belum dapat di-assign.</div>
       ) : (
         <div className="tab-panel">
-          {params.edit && !editTask ? <div className="notice warning">Task tidak ditemukan pada periode aktif.</div> : null}
+          {params.edit && !editTask ? <div className="notice warning">Task carry over hanya untuk monitoring/validasi. Edit task tetap dibatasi pada periode aktif.</div> : null}
+          {carryOverCount > 0 ? (
+            <div className="notice warning">
+              Ada {carryOverCount} task carry over dari periode sebelumnya yang masih open / belum selesai divalidasi. Deadline dan periode asal tetap dipertahankan.
+            </div>
+          ) : null}
 
           {editTask ? (
             <section className="card compact" id="edit-task">
@@ -150,16 +196,21 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
 
           <section className={`${editTask ? "section " : ""}table-wrap`}>
             <table>
-              <thead><tr><th>Task</th><th>Employee</th><th>Support KPI</th><th>Support Tupoksi</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th><th style={{ width: 54, textAlign: "center" }}>Action</th></tr></thead>
+              <thead><tr><th>Task</th><th>Employee</th><th>Periode</th><th>Support KPI</th><th>Support Tupoksi</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th><th style={{ width: 54, textAlign: "center" }}>Action</th></tr></thead>
               <tbody>
                 {tasks.map((task) => {
                   const kpi = kpiFor(task);
                   const tupoksiItem = tupoksiFor(task);
                   const hasSubmission = submittedTaskIds.has(task.id);
+                  const isCarryOver = Boolean(period && task.period_id !== period.id);
                   return (
-                    <tr key={task.id}>
-                      <td><strong>{task.title}</strong></td>
+                    <tr key={task.id} style={isCarryOver ? { background: "#fffdf7" } : undefined}>
+                      <td>
+                        <strong>{task.title}</strong>
+                        {isCarryOver ? <div style={{ marginTop: 4 }}><span className="badge" style={{ background: "#fffaeb", color: "#b54708" }}>Carry Over</span></div> : null}
+                      </td>
                       <td>{task.employees?.full_name}</td>
+                      <td>{periodLabels.get(task.period_id) || "-"}</td>
                       <td>{kpi ? <><strong>{kpi.kpi_code}</strong><div className="muted small">{kpi.kpi_description}</div></> : <span className="muted">-</span>}</td>
                       <td>{tupoksiItem ? <><strong>{tupoksiItem.tupoksi_code}</strong><div className="muted small">{tupoksiItem.tupoksi_description}</div></> : <span className="muted">-</span>}</td>
                       <td><StatusBadge status={task.status} /></td>
@@ -167,22 +218,30 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                       <td>{complexityLabel(task.complexity)}</td>
                       <td>{task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</td>
                       <td style={{ textAlign: "center", position: "relative" }}>
-                        <details style={{ position: "relative", display: "inline-block" }}>
-                          <summary aria-label={`Action ${task.title}`} title="Action" style={{ cursor: "pointer", listStyle: "none", width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 8, fontSize: 22, fontWeight: 700, color: "#475467", userSelect: "none" }}>⋮</summary>
-                          <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 178, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
-                            <Link prefetch href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</Link>
-                            {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · employee terkunci</span> : null}
-                            <form action={deleteTask}>
-                              <input type="hidden" name="task_id" value={task.id} />
-                              <button type="submit" style={{ width: "100%", border: 0, background: "transparent", color: "#b42318", textAlign: "left", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Hapus task</button>
-                            </form>
-                          </div>
-                        </details>
+                        {isCarryOver ? (
+                          task.status === "submitted" ? (
+                            <Link prefetch className="btn secondary" href="/reviews?tab=validation&page=1" style={{ padding: "6px 8px", fontSize: 11 }}>Validasi</Link>
+                          ) : (
+                            <span className="muted small">Monitor</span>
+                          )
+                        ) : (
+                          <details style={{ position: "relative", display: "inline-block" }}>
+                            <summary aria-label={`Action ${task.title}`} title="Action" style={{ cursor: "pointer", listStyle: "none", width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 8, fontSize: 22, fontWeight: 700, color: "#475467", userSelect: "none" }}>⋮</summary>
+                            <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 178, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
+                              <Link prefetch href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</Link>
+                              {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · employee terkunci</span> : null}
+                              <form action={deleteTask}>
+                                <input type="hidden" name="task_id" value={task.id} />
+                                <button type="submit" style={{ width: "100%", border: 0, background: "transparent", color: "#b42318", textAlign: "left", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Hapus task</button>
+                              </form>
+                            </div>
+                          </details>
+                        )}
                       </td>
                     </tr>
                   );
                 })}
-                {tasks.length === 0 ? <tr><td colSpan={9} className="empty">Belum ada task pada periode aktif.</td></tr> : null}
+                {tasks.length === 0 ? <tr><td colSpan={10} className="empty">Belum ada task minggu berjalan maupun task open dari periode sebelumnya.</td></tr> : null}
               </tbody>
             </table>
           </section>
