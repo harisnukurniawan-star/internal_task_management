@@ -114,13 +114,14 @@ export async function submitClaim(formData: FormData) {
     myTaskJump(taskId, "error", "Untuk Lanjut pekan depan, realisasi harus di bawah 100%.");
   }
 
-  if (evidence) {
-    if (evidence.size > MAX_EVIDENCE_BYTES) {
-      myTaskJump(taskId, "error", "Evidence maksimal 3 MB.");
-    }
-    if (!ALLOWED_EVIDENCE_TYPES.has(evidence.type)) {
-      myTaskJump(taskId, "error", "Evidence hanya PDF, JPG, PNG, atau WebP.");
-    }
+  if (!evidence) {
+    myTaskJump(taskId, "error", "Evidence wajib diunggah sebelum realisasi dikirim.");
+  }
+  if (evidence.size > MAX_EVIDENCE_BYTES) {
+    myTaskJump(taskId, "error", "Evidence maksimal 3 MB.");
+  }
+  if (!ALLOWED_EVIDENCE_TYPES.has(evidence.type)) {
+    myTaskJump(taskId, "error", "Evidence hanya PDF, JPG, PNG, atau WebP.");
   }
 
   const [employeeResult, taskResult] = await Promise.all([
@@ -214,6 +215,9 @@ export async function evaluateClaim(formData: FormData) {
   if (!ALLOWED_QUALITIES.has(quality)) {
     reviewJump(returnPage, "error", "Penilaian Quality tidak valid.");
   }
+  if ((decision === "revision" || decision === "rejected") && !feedback) {
+    reviewJump(returnPage, "error", "Feedback wajib diisi untuk Revision atau Rejected.");
+  }
 
   const { data: claim } = await supabase
     .from("task_claims")
@@ -230,6 +234,14 @@ export async function evaluateClaim(formData: FormData) {
     .limit(1);
   if (latestClaims?.[0]?.id !== claimId) {
     reviewJump(returnPage, "error", "Submission ini bukan versi terbaru.");
+  }
+
+  const { count: evidenceCount } = await supabase
+    .from("evidence_files")
+    .select("id", { count: "exact", head: true })
+    .eq("claim_id", claimId);
+  if (decision === "approved" && !evidenceCount) {
+    reviewJump(returnPage, "error", "Evidence belum tersedia. Kembalikan ke staff sebagai Revision untuk dilengkapi.");
   }
 
   const { data: evaluation, error } = await supabase.from("task_evaluations").upsert(
@@ -250,5 +262,11 @@ export async function evaluateClaim(formData: FormData) {
   revalidatePath("/my-week");
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
+  if (decision === "revision") {
+    reviewJump(returnPage, "ok", "Aktivitas dikembalikan ke staff untuk direvisi. Form staff tetap aktif.");
+  }
+  if (decision === "rejected") {
+    reviewJump(returnPage, "ok", "Aktivitas dibatalkan. Form staff dikunci dan aktivitas tidak dihitung sebagai nilai.");
+  }
   reviewJump(returnPage, "ok", `Evaluasi berhasil disimpan. Skor aktivitas ${Number(evaluation.score).toFixed(2)}.`);
 }
