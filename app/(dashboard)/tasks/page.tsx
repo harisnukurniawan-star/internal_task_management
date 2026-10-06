@@ -105,7 +105,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
     ? tasks.filter((task) => task.period_id !== period.id && OPEN_TASK_STATUSES.includes(task.status)).length
     : tasks.filter((task) => OPEN_TASK_STATUSES.includes(task.status)).length;
 
-  const pageSize = editTask ? 3 : 7;
+  const pageSize = editTask ? 3 : 6;
   const requestedPage = Number.parseInt(params.page || "1", 10);
   const totalPages = Math.max(1, Math.ceil(tasks.length / pageSize));
   const currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
@@ -114,7 +114,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   return (
     <div className={activeTab === "list" ? "teamtasks-page teamtasks-list-fit" : "teamtasks-page"}>
       <style>{`
-        .teamtasks-list-fit{height:calc(100vh - 44px);overflow:hidden;display:flex;flex-direction:column;gap:7px}
+        .teamtasks-list-fit{height:calc(100vh - 44px);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:7px}
         .teamtasks-list-fit .topbar{margin-bottom:2px;flex:0 0 auto}
         .teamtasks-list-fit .page-tabs{margin:0;flex:0 0 auto}
         .teamtasks-list-fit .notice{margin:0;padding:6px 9px;line-height:1.25;flex:0 0 auto}
@@ -132,8 +132,8 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         .teamtasks-table .badge{font-size:9px;padding:3px 6px;white-space:nowrap}
         .teamtasks-table .btn{font-size:10px;padding:5px 7px;white-space:nowrap}
         .teamtasks-table td.teamtasks-action-cell{overflow:visible!important}
-        .teamtasks-pagination{height:34px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
-        .teamtasks-pagination .btn{padding:6px 9px;font-size:11px}
+        .teamtasks-pagination{min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;position:relative;z-index:80;background:#fff;padding:2px 0 1px}
+        .teamtasks-pagination .btn{padding:6px 9px;font-size:11px;pointer-events:auto}
         .teamtasks-page .flash-message{margin:0}
         @media(max-width:1100px){
           .teamtasks-table th,.teamtasks-table td{padding:6px 6px;font-size:10px}
