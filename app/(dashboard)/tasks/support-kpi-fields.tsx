@@ -65,7 +65,7 @@ export function TaskIdentityFields({
         <select name="support_kpi_id" required value={kpiId} onChange={(event) => setKpiId(event.target.value)}>
           <option value="" disabled>Pilih KPI yang didukung task ini</option>
           {filteredKpis.map((item) => (
-            <option key={item.id} value={item.id}>{item.kpi_code} · {item.kpi_description}{item.achievement != null ? ` · ${item.achievement}%` : ""}</option>
+            <option key={item.id} value={item.id}>{item.kpi_code} · {item.kpi_description}{` · ${Math.min(Number(item.achievement ?? 100), 100)}%`}</option>
           ))}
         </select>
         <small className="muted">{lockIdentity ? "Employee terkunci karena task sudah memiliki submission. Support KPI tetap dapat diubah sesuai KPI milik employee tersebut." : "Hanya KPI aktif milik pegawai yang dipilih yang dapat dipakai."}</small>
