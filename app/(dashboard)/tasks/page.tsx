@@ -8,7 +8,7 @@ import { COMPLEXITY_OPTIONS, complexityLabel } from "@/lib/scoring";
 import { createTaskWithKpi, deleteTask, updateTask } from "./actions";
 import { TaskIdentityFields } from "./support-kpi-fields";
 
-type TaskSearchParams = FlashParams & { edit?: string; tab?: string };
+type TaskSearchParams = FlashParams & { edit?: string; tab?: string; page?: string };
 
 const OPEN_TASK_STATUSES = ["assigned", "in_progress", "submitted", "revision"];
 
@@ -104,8 +104,41 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
     ? tasks.filter((task) => task.period_id !== period.id && OPEN_TASK_STATUSES.includes(task.status)).length
     : tasks.filter((task) => OPEN_TASK_STATUSES.includes(task.status)).length;
 
+  const pageSize = editTask ? 3 : 7;
+  const requestedPage = Number.parseInt(params.page || "1", 10);
+  const totalPages = Math.max(1, Math.ceil(tasks.length / pageSize));
+  const currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
+  const visibleTasks = tasks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
-    <>
+    <div className={activeTab === "list" ? "teamtasks-page teamtasks-list-fit" : "teamtasks-page"}>
+      <style>{`
+        .teamtasks-list-fit{height:calc(100vh - 44px);overflow:hidden;display:flex;flex-direction:column;gap:7px}
+        .teamtasks-list-fit .topbar{margin-bottom:2px;flex:0 0 auto}
+        .teamtasks-list-fit .page-tabs{margin:0;flex:0 0 auto}
+        .teamtasks-list-fit .notice{margin:0;padding:6px 9px;line-height:1.25;flex:0 0 auto}
+        .teamtasks-list-panel{display:flex;flex-direction:column;gap:7px;min-height:0;flex:1 1 auto}
+        .teamtasks-table-wrap{overflow:visible!important;min-height:0;flex:1 1 auto;border-radius:11px}
+        .teamtasks-table{table-layout:fixed;width:100%}
+        .teamtasks-table th,.teamtasks-table td{padding:7px 8px;font-size:11px;line-height:1.2;vertical-align:middle;overflow:hidden}
+        .teamtasks-table th{height:32px}
+        .teamtasks-table tbody tr{height:52px}
+        .teamtasks-table td{max-height:52px}
+        .teamtasks-clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-word}
+        .teamtasks-clamp.one{-webkit-line-clamp:1}
+        .teamtasks-title{font-size:11px;line-height:1.2}
+        .teamtasks-carry{display:inline-flex;margin-left:5px;padding:2px 5px;border-radius:999px;background:#fffaeb;color:#b54708;font-size:9px;font-weight:800;vertical-align:middle}
+        .teamtasks-table .badge{font-size:9px;padding:3px 6px;white-space:nowrap}
+        .teamtasks-table .btn{font-size:10px;padding:5px 7px;white-space:nowrap}
+        .teamtasks-pagination{height:34px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
+        .teamtasks-pagination .btn{padding:6px 9px;font-size:11px}
+        .teamtasks-page .flash-message{margin:0}
+        @media(max-width:1100px){
+          .teamtasks-table th,.teamtasks-table td{padding:6px 6px;font-size:10px}
+          .teamtasks-table tbody tr{height:48px}
+          .teamtasks-table td{max-height:48px}
+        }
+      `}</style>
       <PageHeader title="Team Tasks" subtitle={period ? `${period.label} · task minggu berjalan + seluruh task bawahan yang masih open dari periode sebelumnya.` : "Menampilkan seluruh task bawahan yang masih open."} />
       <FlashMessage params={params} />
 
@@ -141,7 +174,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
           </section>
         ) : <div className="notice warning tab-panel">Periode aktif belum tersedia sehingga task belum dapat di-assign.</div>
       ) : (
-        <div className="tab-panel">
+        <div className="tab-panel teamtasks-list-panel">
           {params.edit && !editTask ? <div className="notice warning">Task carry over hanya untuk monitoring/validasi. Edit task tetap dibatasi pada periode aktif.</div> : null}
           {carryOverCount > 0 ? (
             <div className="notice warning">
@@ -159,7 +192,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                     {submittedTaskIds.has(editTask.id) ? " Karena sudah ada submission, Employee tetap dikunci tetapi Support KPI dan Support Tupoksi masih dapat dipilih atau diubah." : ""}
                   </p>
                 </div>
-                <Link prefetch className="btn secondary" href="/tasks?tab=list">Batal</Link>
+                <Link prefetch className="btn secondary" href={`/tasks?tab=list&page=${currentPage}`}>Batal</Link>
               </div>
               <form action={updateTask} className="form section-sm">
                 <input type="hidden" name="task_id" value={editTask.id} />
@@ -194,25 +227,43 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
             </section>
           ) : null}
 
-          <section className={`${editTask ? "section " : ""}table-wrap`}>
-            <table>
-              <thead><tr><th>Task</th><th>Employee</th><th>Periode</th><th>Support KPI</th><th>Support Tupoksi</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th><th style={{ width: 54, textAlign: "center" }}>Action</th></tr></thead>
+          <section className={`${editTask ? "section " : ""}table-wrap teamtasks-table-wrap`}>
+            <table className="teamtasks-table">
+              <colgroup>
+                <col style={{ width: "17%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "13%" }} />
+                <col style={{ width: "13%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "7%" }} />
+              </colgroup>
+              <thead><tr><th>Task</th><th>Employee</th><th>Periode</th><th>Support KPI</th><th>Support Tupoksi</th><th>Status</th><th>Priority</th><th>Kompleksitas</th><th>Due</th><th style={{ textAlign: "center" }}>Action</th></tr></thead>
               <tbody>
-                {tasks.map((task) => {
+                {visibleTasks.map((task) => {
                   const kpi = kpiFor(task);
                   const tupoksiItem = tupoksiFor(task);
                   const hasSubmission = submittedTaskIds.has(task.id);
                   const isCarryOver = Boolean(period && task.period_id !== period.id);
                   return (
                     <tr key={task.id} style={isCarryOver ? { background: "#fffdf7" } : undefined}>
-                      <td>
-                        <strong>{task.title}</strong>
-                        {isCarryOver ? <div style={{ marginTop: 4 }}><span className="badge" style={{ background: "#fffaeb", color: "#b54708" }}>Carry Over</span></div> : null}
+                      <td title={task.title}>
+                        <div className="teamtasks-clamp teamtasks-title">
+                          <strong>{task.title}</strong>
+                          {isCarryOver ? <span className="teamtasks-carry">Carry Over</span> : null}
+                        </div>
                       </td>
-                      <td>{task.employees?.full_name}</td>
-                      <td>{periodLabels.get(task.period_id) || "-"}</td>
-                      <td>{kpi ? <><strong>{kpi.kpi_code}</strong><div className="muted small">{kpi.kpi_description}</div></> : <span className="muted">-</span>}</td>
-                      <td>{tupoksiItem ? <><strong>{tupoksiItem.tupoksi_code}</strong><div className="muted small">{tupoksiItem.tupoksi_description}</div></> : <span className="muted">-</span>}</td>
+                      <td title={task.employees?.full_name || ""}><div className="teamtasks-clamp one">{task.employees?.full_name}</div></td>
+                      <td title={periodLabels.get(task.period_id) || "-"}><div className="teamtasks-clamp one">{periodLabels.get(task.period_id) || "-"}</div></td>
+                      <td title={kpi ? `${kpi.kpi_code} · ${kpi.kpi_description}` : "-"}>
+                        {kpi ? <div className="teamtasks-clamp"><strong>{kpi.kpi_code}</strong> · {kpi.kpi_description}</div> : <span className="muted">-</span>}
+                      </td>
+                      <td title={tupoksiItem ? `${tupoksiItem.tupoksi_code} · ${tupoksiItem.tupoksi_description}` : "-"}>
+                        {tupoksiItem ? <div className="teamtasks-clamp"><strong>{tupoksiItem.tupoksi_code}</strong> · {tupoksiItem.tupoksi_description}</div> : <span className="muted">-</span>}
+                      </td>
                       <td><StatusBadge status={task.status} /></td>
                       <td>{task.priority}</td>
                       <td>{complexityLabel(task.complexity)}</td>
@@ -228,7 +279,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                           <details style={{ position: "relative", display: "inline-block" }}>
                             <summary aria-label={`Action ${task.title}`} title="Action" style={{ cursor: "pointer", listStyle: "none", width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 8, fontSize: 22, fontWeight: 700, color: "#475467", userSelect: "none" }}>⋮</summary>
                             <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 178, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
-                              <Link prefetch href={`/tasks?tab=list&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</Link>
+                              <Link prefetch href={`/tasks?tab=list&page=${currentPage}&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</Link>
                               {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · employee terkunci</span> : null}
                               <form action={deleteTask}>
                                 <input type="hidden" name="task_id" value={task.id} />
@@ -245,8 +296,29 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
               </tbody>
             </table>
           </section>
+
+          {tasks.length > 0 ? (
+            <div className="teamtasks-pagination">
+              <span className="muted small">Menampilkan {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, tasks.length)} dari {tasks.length} task</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                {currentPage > 1 ? (
+                  <Link prefetch className="btn secondary" href={`/tasks?tab=list&page=${currentPage - 1}`}>← Sebelumnya</Link>
+                ) : (
+                  <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>
+                )}
+                <span className="badge">{currentPage} / {totalPages}</span>
+                {currentPage < totalPages ? (
+                  <Link prefetch className="btn secondary" href={`/tasks?tab=list&page=${currentPage + 1}`}>Berikutnya →</Link>
+                ) : (
+                  <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </>
+  );
+    </div>
   );
 }
