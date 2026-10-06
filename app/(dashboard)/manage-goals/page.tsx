@@ -354,7 +354,7 @@ export default async function ManageGoalsPMGMPage({
                   <td style={{ textAlign: "center" }}>1</td>
                   {months.map((month, index) => {
                     const realization = cumulativeMetric(kpi.id, month, "score");
-                    const target = index === 5 && kpi.achievement != null ? Number(kpi.achievement) : null;
+                    const target = index === 5 ? Math.min(Number(kpi.achievement ?? 100), 100) : null;
                     return (
                       <td key={month}>
                         <div className="pmgm-month">
