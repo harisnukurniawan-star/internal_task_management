@@ -57,12 +57,53 @@ type ApprovedMetric = {
   timeliness: number;
   completion: number;
   complexity: number;
+  workdaysUsed: number;
 };
 
 const PMGM_TRACKING_START = { year: 2026, month: 9 };
 
 function isTrackingMonth(year: number, month: number) {
   return year > PMGM_TRACKING_START.year || (year === PMGM_TRACKING_START.year && month >= PMGM_TRACKING_START.month);
+}
+
+function localDateText(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  return year && month && day ? `${year}-${month}-${day}` : "";
+}
+
+function mondayForDate(dateText: string) {
+  const [year, month, day] = dateText.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const weekday = date.getUTCDay();
+  const offset = weekday === 0 ? 6 : weekday - 1;
+  date.setUTCDate(date.getUTCDate() - offset);
+  return date.toISOString().slice(0, 10);
+}
+
+function businessDaysInclusive(startDateText: string, endDateText: string) {
+  const [startYear, startMonth, startDay] = startDateText.split("-").map(Number);
+  const [endYear, endMonth, endDay] = endDateText.split("-").map(Number);
+  const cursor = new Date(Date.UTC(startYear, startMonth - 1, startDay));
+  const end = new Date(Date.UTC(endYear, endMonth - 1, endDay));
+  if (Number.isNaN(cursor.getTime()) || Number.isNaN(end.getTime()) || end < cursor) return 0;
+
+  let count = 0;
+  while (cursor <= end) {
+    const weekday = cursor.getUTCDay();
+    if (weekday >= 1 && weekday <= 5) count += 1;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return count;
 }
 
 export default async function ManageGoalsPMGMPage({
@@ -112,7 +153,7 @@ export default async function ManageGoalsPMGMPage({
         .order("kpi_code"),
       supabase
         .from("tasks")
-        .select("id,support_kpi_id,due_at,task_claims(id,version,submitted_at,task_evaluations(decision,score,quality_score,timeliness_score,completion_score,complexity_score,evaluated_at))")
+        .select("id,support_kpi_id,due_at,weekly_periods(week_start),task_claims(id,version,submitted_at,task_evaluations(decision,score,quality_score,timeliness_score,completion_score,complexity_score,evaluated_at))")
         .eq("assigned_to", selectedEmployeeId)
         .not("support_kpi_id", "is", null),
     ]);
@@ -144,6 +185,11 @@ export default async function ManageGoalsPMGMPage({
     const deadlineDate = String(task.due_at || "").slice(0, 10);
     if (!deadlineDate || deadlineDate < semester.start || deadlineDate > semester.end) continue;
 
+    const taskPeriod = relationOne(task.weekly_periods);
+    const submittedDate = localDateText(String(latestClaim.submitted_at || ""));
+    const weekStart = String(taskPeriod?.week_start || "").slice(0, 10) || mondayForDate(deadlineDate);
+    const workdaysUsed = submittedDate ? businessDaysInclusive(weekStart, submittedDate) : 0;
+
     const metric: ApprovedMetric = {
       deadlineDate,
       score: Number(evaluation.score),
@@ -151,6 +197,7 @@ export default async function ManageGoalsPMGMPage({
       timeliness: Number(evaluation.timeliness_score),
       completion: Number(evaluation.completion_score),
       complexity: Number(evaluation.complexity_score),
+      workdaysUsed,
     };
     if (!Number.isFinite(metric.completion)) continue;
 
@@ -200,6 +247,21 @@ export default async function ManageGoalsPMGMPage({
     const values = eligible.map((item) => item[field]).filter((value) => Number.isFinite(value));
     if (values.length === 0) return null;
     return values.reduce((sum, value) => sum + value, 0) / values.length;
+  }
+
+  function timeTotals(kpiId: string) {
+    const rows = approvedMetricsByKpi.get(kpiId) ?? [];
+    const eligible = rows.filter((item) => {
+      const [yearText, monthText] = item.deadlineDate.split("-");
+      return Number(yearText) === semester.year
+        && isTrackingMonth(Number(yearText), Number(monthText));
+    });
+
+    if (eligible.length === 0) return { targetDays: null, realizationDays: null };
+    return {
+      targetDays: eligible.length * 5,
+      realizationDays: eligible.reduce((sum, item) => sum + item.workdaysUsed, 0),
+    };
   }
   const baseEmployeeQuery = (employeeId: string) =>
     `/manage-goals?employee_id=${encodeURIComponent(employeeId)}&status=${statusFilter}`;
@@ -390,11 +452,15 @@ export default async function ManageGoalsPMGMPage({
                     </div>
                   </td>
                   <td>
-                    <div className="pmgm-month" style={{ gap: 4 }}>
-                      {months.filter((month) => isTrackingMonth(semester.year, month)).map((month) => (
-                        <span key={month}><strong>B{month - semester.startMonth + 1}:</strong>{formatScore(monthlyMetric(kpi.id, month, "timeliness"))}</span>
-                      ))}
-                    </div>
+                    {(() => {
+                      const timing = timeTotals(kpi.id);
+                      return (
+                        <div className="pmgm-month">
+                          <span><strong>T:</strong>{timing.targetDays == null ? "-" : `${timing.targetDays} hari`}</span>
+                          <span><strong>R:</strong>{timing.realizationDays == null ? "-" : `${timing.realizationDays} hari`}</span>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td>
                     <div className="pmgm-month" style={{ gap: 5 }}>
