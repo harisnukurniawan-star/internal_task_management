@@ -45,6 +45,11 @@ function formatScore(value: number | null) {
   return Number(value.toFixed(2)).toString();
 }
 
+function formatPercent(value: number | null) {
+  const formatted = formatScore(value);
+  return formatted === "-" ? "-" : `${formatted}%`;
+}
+
 type ApprovedMetric = {
   deadlineDate: string;
   score: number;
@@ -379,10 +384,9 @@ export default async function ManageGoalsPMGMPage({
                     );
                   })}
                   <td>
-                    <div className="pmgm-month" style={{ gap: 4 }}>
-                      {months.filter((month) => isTrackingMonth(semester.year, month)).map((month) => (
-                        <span key={month}><strong>B{month - semester.startMonth + 1}:</strong>{formatScore(monthlyMetric(kpi.id, month, "quality"))}</span>
-                      ))}
+                    <div className="pmgm-month">
+                      <span><strong>T:</strong>100%</span>
+                      <span><strong>R:</strong>{formatPercent(cumulativeMetric(kpi.id, finalMonth, "quality"))}</span>
                     </div>
                   </td>
                   <td>
