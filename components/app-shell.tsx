@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { logout } from "@/app/(auth)/login/actions";
 
@@ -48,7 +49,18 @@ export function AppShell({
   return (
     <div className="shell">
       <aside className="sidebar">
-        <div className="brand">Internal Task Management<small>{name} · {roleLabel}</small></div>
+        <div className="brand">
+          <Image
+            src="/task-manager-26.png"
+            alt="Task Manager 26"
+            width={2172}
+            height={724}
+            sizes="(max-width: 900px) 260px, 182px"
+            priority
+            style={{ display: "block", width: "100%", maxWidth: 260, height: "auto" }}
+          />
+          <small>{name} · {roleLabel}</small>
+        </div>
         <nav className="nav">
           <Link href="/dashboard">Dashboard</Link>
           {supervisor ? (
