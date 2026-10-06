@@ -327,7 +327,7 @@ export default async function ManageGoalsPMGMPage({
         .pmgm-month span{display:flex;gap:5px}
         .pmgm-month strong{width:12px}
         .pmgm-empty{padding:28px!important;text-align:center;color:var(--muted)}
-        @media(max-width:1100px){.pmgm-shell{grid-template-columns:190px minmax(0,1fr)}}
+        @media(max-width:1100px){.pmgm-shell{grid-template-columns:190px minmax(0,1fr)}.pmgm-shell.pmgm-self-only{grid-template-columns:minmax(0,1fr)}}
       `}</style>
 
       {supervisor ? (
