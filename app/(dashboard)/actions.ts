@@ -28,6 +28,14 @@ function reviewJump(page: number, type: "ok" | "error", message: string): never 
   throw new Error("Redirect failed");
 }
 
+function myTaskJump(taskId: string, type: "ok" | "error" | "warning", message: string): never {
+  const params = new URLSearchParams();
+  if (taskId) params.set("task", taskId);
+  params.set(type, message);
+  redirect(`/my-tasks?${params.toString()}`);
+  throw new Error("Redirect failed");
+}
+
 export async function createTask(formData: FormData) {
   const { supabase, profile } = await requireProfile();
   if (!["admin", "supervisor"].includes(profile.role)) jump("/dashboard", "error", "Akses Supervisor diperlukan.");
@@ -94,24 +102,24 @@ export async function submitClaim(formData: FormData) {
   const evidence = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
 
   if (!taskId || !Number.isFinite(completionPercent) || completionPercent < 0 || completionPercent > 100) {
-    jump("/my-tasks", "error", "Realisasi harus berupa angka 0-100%.");
+    myTaskJump(taskId, "error", "Realisasi harus berupa angka 0-100%.");
   }
   if (!["selesai", "lanjut_pekan_depan"].includes(progressStatus)) {
-    jump("/my-tasks", "error", "Status progress wajib dipilih.");
+    myTaskJump(taskId, "error", "Status progress wajib dipilih.");
   }
   if (progressStatus === "selesai" && completionPercent !== 100) {
-    jump("/my-tasks", "error", "Status Selesai hanya dapat dipilih jika realisasi 100%.");
+    myTaskJump(taskId, "error", "Status Selesai hanya dapat dipilih jika realisasi 100%.");
   }
   if (progressStatus === "lanjut_pekan_depan" && completionPercent >= 100) {
-    jump("/my-tasks", "error", "Untuk Lanjut pekan depan, realisasi harus di bawah 100%.");
+    myTaskJump(taskId, "error", "Untuk Lanjut pekan depan, realisasi harus di bawah 100%.");
   }
 
   if (evidence) {
     if (evidence.size > MAX_EVIDENCE_BYTES) {
-      jump("/my-tasks", "error", "Evidence maksimal 3 MB.");
+      myTaskJump(taskId, "error", "Evidence maksimal 3 MB.");
     }
     if (!ALLOWED_EVIDENCE_TYPES.has(evidence.type)) {
-      jump("/my-tasks", "error", "Evidence hanya PDF, JPG, PNG, atau WebP.");
+      myTaskJump(taskId, "error", "Evidence hanya PDF, JPG, PNG, atau WebP.");
     }
   }
 
@@ -122,12 +130,12 @@ export async function submitClaim(formData: FormData) {
   const employee = employeeResult.data;
   const task = taskResult.data;
 
-  if (!employee) jump("/my-tasks", "error", "Profil employee belum ditautkan.");
+  if (!employee) myTaskJump(taskId, "error", "Profil employee belum ditautkan.");
   if (!task || task.assigned_to !== employee.id) {
-    jump("/my-tasks", "error", "Task tidak ditemukan atau bukan milik Anda.");
+    myTaskJump(taskId, "error", "Task tidak ditemukan atau bukan milik Anda.");
   }
   if (!["assigned", "in_progress", "revision"].includes(task.status)) {
-    jump("/my-tasks", "error", "Task ini sedang menunggu review atau sudah ditutup.");
+    myTaskJump(taskId, "error", "Task ini sedang menunggu review atau sudah ditutup.");
   }
 
   const { data: oldClaims } = await supabase
@@ -151,7 +159,7 @@ export async function submitClaim(formData: FormData) {
     })
     .select("id")
     .single();
-  if (claimError || !claim) jump("/my-tasks", "error", "Realisasi gagal disimpan.");
+  if (claimError || !claim) myTaskJump(taskId, "error", "Realisasi gagal disimpan.");
 
   let warning = "";
   if (evidence) {
@@ -185,8 +193,8 @@ export async function submitClaim(formData: FormData) {
   revalidatePath("/dashboard");
   revalidatePath("/leaderboard");
 
-  if (warning) jump("/my-tasks", "warning", warning);
-  jump("/my-tasks", "ok", `Realisasi versi ${version} berhasil dikirim.`);
+  if (warning) myTaskJump(taskId, "warning", warning);
+  myTaskJump(taskId, "ok", `Realisasi versi ${version} berhasil dikirim.`);
 }
 
 export async function evaluateClaim(formData: FormData) {
