@@ -216,14 +216,10 @@ export default async function ManageGoalsPMGMPage({
         .pmgm-main{min-width:0;display:flex;flex-direction:column;overflow:hidden}
         .pmgm-app-tabs{display:flex;gap:24px;align-items:flex-end;height:38px;padding:0 24px;border-bottom:1px solid var(--line);flex:0 0 auto}
         .pmgm-app-tab{height:38px;display:flex;align-items:center;font-size:12px;font-weight:800;color:#2a3587;border-bottom:2px solid #0a94b7}
-        .pmgm-app-tab.muted{color:#111827;border-bottom:0}
         .pmgm-head{padding:12px 24px 10px;background:#f7f7f8;border-bottom:1px solid var(--line);flex:0 0 auto}
-        .pmgm-head-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+        .pmgm-head-top{display:flex;justify-content:flex-start;gap:12px;align-items:flex-start}
         .pmgm-title{font-size:22px;font-weight:800;color:#111827}
         .pmgm-subtitle{font-size:11px;color:#667085;margin-top:5px}
-        .pmgm-head-actions{display:flex;gap:6px}
-        .pmgm-pill{padding:5px 9px;border-radius:7px;border:1px solid #cbd5e1;background:#fff;font-size:10px;font-weight:700;color:#0f6d8b}
-        .pmgm-pill.employee{background:#f1f8cf;color:#247a2a;border-color:#d9e89c}
         .pmgm-summary{display:flex;align-items:center;gap:20px;padding:12px 24px;background:#fff;border-bottom:1px solid var(--line);flex:0 0 auto}
         .pmgm-total{font-size:24px;font-weight:800;color:#111827}
         .pmgm-total small{font-size:11px;font-weight:700;margin-left:5px}
@@ -233,7 +229,6 @@ export default async function ManageGoalsPMGMPage({
         .pmgm-status-link.previous .pmgm-status-circle{border-color:#8a94a6;color:#667085}
         .pmgm-status-link.selected{border-bottom:2px solid #ff3d4d;padding-bottom:5px}
         .pmgm-complete{display:flex;gap:6px;align-items:center;font-size:11px;color:#12823b}
-        .pmgm-notice{margin-left:auto;font-size:10px;color:#667085;max-width:460px;text-align:right;line-height:1.35}
         .pmgm-table-wrap{flex:1 1 auto;min-height:0;overflow:auto;background:#fff}
         .pmgm-table{border-collapse:separate;border-spacing:0;min-width:1950px;width:100%;table-layout:fixed}
         .pmgm-table th,.pmgm-table td{border-right:1px solid #e1e5eb;border-bottom:1px solid #e1e5eb;padding:8px 9px;font-size:10px;vertical-align:top;background:#fff}
@@ -251,7 +246,7 @@ export default async function ManageGoalsPMGMPage({
         .pmgm-month span{display:flex;gap:5px}
         .pmgm-month strong{width:12px}
         .pmgm-empty{padding:28px!important;text-align:center;color:var(--muted)}
-        @media(max-width:1100px){.pmgm-shell{grid-template-columns:190px minmax(0,1fr)}.pmgm-notice{display:none}}
+        @media(max-width:1100px){.pmgm-shell{grid-template-columns:190px minmax(0,1fr)}}
       `}</style>
 
       <aside className="pmgm-people">
@@ -279,7 +274,6 @@ export default async function ManageGoalsPMGMPage({
       <main className="pmgm-main">
         <div className="pmgm-app-tabs">
           <span className="pmgm-app-tab">KPI</span>
-          <span className="pmgm-app-tab muted">PDP</span>
         </div>
 
         <section className="pmgm-head">
@@ -289,10 +283,6 @@ export default async function ManageGoalsPMGMPage({
               <div className="pmgm-subtitle">
                 {semester.start} – {semester.end} · {selectedEmployee?.full_name || "Pilih pegawai"} · State: Active
               </div>
-            </div>
-            <div className="pmgm-head-actions">
-              <span className="pmgm-pill employee">Employee&apos;s View</span>
-              <span className="pmgm-pill">Manage Goals PMGM</span>
             </div>
           </div>
         </section>
@@ -316,9 +306,6 @@ export default async function ManageGoalsPMGMPage({
             <strong>Semua</strong>
           </Link>
           <div className="pmgm-complete">● {kpis.length} KPI terpetakan</div>
-          <div className="pmgm-notice">
-            Mulai Bulan ke-3 (September 2026): setiap task versi terbaru yang sudah Approved masuk ke bucket Support KPI + bulan deadline. Completion, Waktu, dan Kualitas masing-masing dihitung sebagai rata-rata seluruh aktivitas pada KPI dan bulan yang sama. T Completion = 100%.
-          </div>
         </section>
 
         <div className="pmgm-table-wrap">
