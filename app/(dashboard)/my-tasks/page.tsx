@@ -156,11 +156,21 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                     {hasEvidence ? <a className="evidence-link" href={`/evidence/${claim.id}`} target="_blank" rel="noreferrer">Buka evidence</a> : <span className="muted small">Belum ada evidence</span>}
                     {evaluation ? (
                       <div className={`feedback ${evaluation.decision}`}>
-                        <strong>{evaluation.decision === "revision" ? "Perlu revisi" : evaluation.decision}</strong>
-                        <span>Quality: {qualityLabel(evaluation.quality)}</span>
-                        <span>Waktu: {Number(evaluation.timeliness_score).toFixed(1)}</span>
-                        <span>Completion: {Number(evaluation.completion_score).toFixed(1)}</span>
-                        <span><strong>Skor: {Number(evaluation.score).toFixed(2)}</strong></span>
+                        <strong>
+                          {evaluation.decision === "revision"
+                            ? "Perlu revisi · form aktif"
+                            : evaluation.decision === "rejected"
+                              ? "Aktivitas dibatalkan · form terkunci"
+                              : "Approved"}
+                        </strong>
+                        {evaluation.decision === "approved" ? (
+                          <>
+                            <span>Quality: {qualityLabel(evaluation.quality)}</span>
+                            <span>Waktu: {Number(evaluation.timeliness_score).toFixed(1)}</span>
+                            <span>Completion: {Number(evaluation.completion_score).toFixed(1)}</span>
+                            <span><strong>Skor: {Number(evaluation.score).toFixed(2)}</strong></span>
+                          </>
+                        ) : null}
                         {evaluation.feedback ? <span>{evaluation.feedback}</span> : null}
                       </div>
                     ) : task.status === "submitted" ? <div className="muted small">Menunggu review Supervisor.</div> : null}
@@ -223,13 +233,18 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                         <textarea name="employee_comment" maxLength={500} placeholder="Catatan atau kendala..." />
                       </div>
                       <div className="field">
-                        <label>Upload evidence <span className="muted">(opsional)</span></label>
-                        <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" />
-                        <small className="muted">PDF/JPG/PNG/WebP · maks. 3 MB.</small>
+                        <label>Upload evidence <span className="muted">(wajib)</span></label>
+                        <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required />
+                        <small className="muted">Wajib diisi · PDF/JPG/PNG/WebP · maks. 3 MB.</small>
                       </div>
                       <button className="btn" type="submit">{task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}</button>
                     </div>
                   </form>
+                ) : task.status === "rejected" ? (
+                  <div className="notice neutral">
+                    <strong>Aktivitas dibatalkan oleh Supervisor.</strong><br />
+                    Form input dinonaktifkan dan aktivitas ini tidak dihitung sebagai nilai.
+                  </div>
                 ) : null}
               </div>
             </details>

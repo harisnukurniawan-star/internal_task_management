@@ -100,6 +100,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const kpi = relationOne(claim?.tasks?.employee_kpis);
   const tupoksi = relationOne(claim?.tasks?.employee_tupoksi);
   const progressLabel = claim?.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai";
+  const hasEvidence = evidenceRows.length > 0;
 
   const historyPageSize = 10;
   const historyTotalPages = Math.max(1, Math.ceil(completedClaims.length / historyPageSize));
@@ -209,35 +210,52 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 </div>
               </div>
 
-              <form action={evaluateClaim} className="form" style={{ minWidth: 0, minHeight: 0, height: "100%", display: "flex", flexDirection: "column", gap: 9 }}>
-                <input type="hidden" name="claim_id" value={claim.id} />
-                <input type="hidden" name="return_page" value={currentPage} />
-
-                <div className="form-row" style={{ flex: "0 0 auto" }}>
-                  <div className="field">
-                    <label>Decision</label>
-                    <select name="decision" defaultValue={evaluation?.decision || "approved"}>
-                      <option value="approved">Approved</option>
-                      <option value="revision">Revision</option>
-                      <option value="rejected">Rejected</option>
-                    </select>
+              {!hasEvidence ? (
+                <form action={evaluateClaim} className="form" style={{ minWidth: 0, minHeight: 0, height: "100%", display: "flex", flexDirection: "column", gap: 9, justifyContent: "flex-end" }}>
+                  <input type="hidden" name="claim_id" value={claim.id} />
+                  <input type="hidden" name="return_page" value={currentPage} />
+                  <input type="hidden" name="decision" value="revision" />
+                  <input type="hidden" name="quality" value="sesuai_arahan" />
+                  <input type="hidden" name="feedback" value="Harap lengkapi eviden." />
+                  <div className="notice neutral" style={{ margin: 0 }}>
+                    <strong>Evidence belum tersedia.</strong><br />
+                    Submission tidak dapat dinilai. Kembalikan ke staff agar evidence dilengkapi.
                   </div>
-                  <div className="field">
-                    <label>Quality</label>
-                    <select name="quality" defaultValue={evaluation?.quality || "sesuai_arahan"}>
-                      {QUALITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label} · {item.score}</option>)}
-                    </select>
+                  <button className="btn" type="submit">Lengkapi Evidence</button>
+                </form>
+              ) : (
+                <form action={evaluateClaim} className="form" style={{ minWidth: 0, minHeight: 0, height: "100%", display: "flex", flexDirection: "column", gap: 9 }}>
+                  <input type="hidden" name="claim_id" value={claim.id} />
+                  <input type="hidden" name="return_page" value={currentPage} />
+
+                  <div className="form-row" style={{ flex: "0 0 auto" }}>
+                    <div className="field">
+                      <label>Decision</label>
+                      <select name="decision" defaultValue={evaluation?.decision || "approved"}>
+                        <option value="approved">Approved</option>
+                        <option value="revision">Revision</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Quality</label>
+                      <select name="quality" defaultValue={evaluation?.quality || "sesuai_arahan"}>
+                        {QUALITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label} · {item.score}</option>)}
+                      </select>
+                    </div>
                   </div>
-                </div>
 
-                <div className="field" style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
-                  <label>Feedback</label>
-                  <textarea name="feedback" maxLength={1600} defaultValue={evaluation?.feedback || ""} style={{ flex: "1 1 auto", minHeight: 100, resize: "none" }} />
-                </div>
+                  <div className="field" style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
+                    <label>Feedback</label>
+                    <textarea name="feedback" maxLength={1600} defaultValue={evaluation?.feedback || ""} style={{ flex: "1 1 auto", minHeight: 100, resize: "none" }} />
+                  </div>
 
-                <small className="muted" style={{ flex: "0 0 auto" }}>{isEditMode ? "Perubahan akan memperbarui evaluasi ini tanpa membuat duplikat." : "Skor final dihitung otomatis setelah evaluasi disimpan."}</small>
-                <button className="btn" type="submit" style={{ flex: "0 0 auto" }}>{isEditMode ? "Simpan Perubahan Evaluasi" : "Simpan Evaluasi"}</button>
-              </form>
+                  <small className="muted" style={{ flex: "0 0 auto" }}>
+                    Revision mengembalikan aktivitas ke staff dan form tetap aktif. Rejected membatalkan aktivitas, mengunci form staff, dan tidak dihitung sebagai nilai.
+                  </small>
+                  <button className="btn" type="submit" style={{ flex: "0 0 auto" }}>{isEditMode ? "Simpan Perubahan Evaluasi" : "Simpan Evaluasi"}</button>
+                </form>
+              )}
             </div>
           </section>
         ) : (
@@ -281,7 +299,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                       <td>{itemKpi ? <><span>{itemKpi.kpi_code}</span><div className="muted small clamp">{itemKpi.kpi_description}</div></> : <span className="muted">-</span>}</td>
                       <td><span className={`badge ${itemEval?.decision || ""}`}>{decisionLabel(itemEval?.decision)}</span></td>
                       <td>{qualityLabel(itemEval?.quality)}</td>
-                      <td><strong>{Number(itemEval?.score || 0).toFixed(2)}</strong></td>
+                      <td>{itemEval?.decision === "approved" ? <strong>{Number(itemEval?.score || 0).toFixed(2)}</strong> : <span className="muted">{itemEval?.decision === "rejected" ? "- · dibatalkan" : "- · belum final"}</span>}</td>
                       <td>{itemEval?.evaluated_at ? new Date(itemEval.evaluated_at).toLocaleString("id-ID") : "-"}</td>
                       <td style={{ textAlign: "center", overflow: "visible" }}>
                         <details style={{ position: "relative", display: "inline-block" }}>
