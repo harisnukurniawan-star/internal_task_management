@@ -45,6 +45,15 @@ function formatScore(value: number | null) {
   return Number(value.toFixed(2)).toString();
 }
 
+type ApprovedMetric = {
+  periodDate: string;
+  score: number;
+  quality: number;
+  timeliness: number;
+  completion: number;
+  complexity: number;
+};
+
 export default async function ManageGoalsPMGMPage({
   searchParams,
 }: {
@@ -92,7 +101,7 @@ export default async function ManageGoalsPMGMPage({
         .order("kpi_code"),
       supabase
         .from("tasks")
-        .select("id,support_kpi_id,task_claims(id,version,submitted_at,task_evaluations(decision,score,evaluated_at))")
+        .select("id,support_kpi_id,due_at,weekly_periods(week_start),task_claims(id,version,submitted_at,task_evaluations(decision,score,quality_score,timeliness_score,completion_score,complexity_score,evaluated_at))")
         .eq("assigned_to", selectedEmployeeId)
         .not("support_kpi_id", "is", null),
     ]);
@@ -108,7 +117,7 @@ export default async function ManageGoalsPMGMPage({
     return true;
   });
 
-  const approvedScoresByKpi = new Map<string, Array<{ evaluatedAt: string; score: number }>>();
+  const approvedMetricsByKpi = new Map<string, ApprovedMetric[]>();
 
   for (const task of tasks) {
     if (!task.support_kpi_id) continue;
@@ -119,28 +128,46 @@ export default async function ManageGoalsPMGMPage({
     const evaluation = relationOne(latestClaim.task_evaluations);
     if (!evaluation || evaluation.decision !== "approved" || !evaluation.evaluated_at) continue;
 
-    const evaluatedAt = String(evaluation.evaluated_at);
-    const evaluatedDate = evaluatedAt.slice(0, 10);
-    if (evaluatedDate < semester.start || evaluatedDate > semester.end) continue;
+    const taskPeriod = relationOne(task.weekly_periods);
+    const periodDate =
+      String(taskPeriod?.week_start || "").slice(0, 10) ||
+      String(task.due_at || "").slice(0, 10) ||
+      String(evaluation.evaluated_at).slice(0, 10);
 
-    const score = Number(evaluation.score);
-    if (!Number.isFinite(score)) continue;
+    if (!periodDate || periodDate < semester.start || periodDate > semester.end) continue;
 
-    const existing = approvedScoresByKpi.get(task.support_kpi_id) ?? [];
-    existing.push({ evaluatedAt, score });
-    approvedScoresByKpi.set(task.support_kpi_id, existing);
+    const metric: ApprovedMetric = {
+      periodDate,
+      score: Number(evaluation.score),
+      quality: Number(evaluation.quality_score),
+      timeliness: Number(evaluation.timeliness_score),
+      completion: Number(evaluation.completion_score),
+      complexity: Number(evaluation.complexity_score),
+    };
+    if (!Number.isFinite(metric.score)) continue;
+
+    const existing = approvedMetricsByKpi.get(task.support_kpi_id) ?? [];
+    existing.push(metric);
+    approvedMetricsByKpi.set(task.support_kpi_id, existing);
   }
 
   const months = Array.from({ length: 6 }, (_, index) => semester.startMonth + index);
+  const finalMonth = months[months.length - 1];
 
-  function cumulativeRealization(kpiId: string, month: number) {
-    const rows = approvedScoresByKpi.get(kpiId) ?? [];
+  function cumulativeMetric(
+    kpiId: string,
+    month: number,
+    field: "score" | "quality" | "timeliness" | "completion" | "complexity",
+  ) {
+    const rows = approvedMetricsByKpi.get(kpiId) ?? [];
     const eligible = rows.filter((item) => {
-      const date = new Date(item.evaluatedAt);
-      return date.getUTCFullYear() === semester.year && date.getUTCMonth() + 1 <= month;
+      const [yearText, monthText] = item.periodDate.split("-");
+      return Number(yearText) === semester.year && Number(monthText) <= month;
     });
     if (eligible.length === 0) return null;
-    return eligible.reduce((sum, item) => sum + item.score, 0) / eligible.length;
+    const values = eligible.map((item) => item[field]).filter((value) => Number.isFinite(value));
+    if (values.length === 0) return null;
+    return values.reduce((sum, value) => sum + value, 0) / values.length;
   }
 
   const baseEmployeeQuery = (employeeId: string) =>
@@ -177,11 +204,12 @@ export default async function ManageGoalsPMGMPage({
         .pmgm-status-link{display:grid;place-items:center;gap:3px;min-width:50px;color:#111827;font-size:10px}
         .pmgm-status-circle{width:38px;height:38px;border-radius:999px;border:2px solid #1686d9;display:grid;place-items:center;font-size:12px;font-weight:800}
         .pmgm-status-link.inactive .pmgm-status-circle{border-color:#ff3d4d}
+        .pmgm-status-link.previous .pmgm-status-circle{border-color:#8a94a6;color:#667085}
         .pmgm-status-link.selected{border-bottom:2px solid #ff3d4d;padding-bottom:5px}
         .pmgm-complete{display:flex;gap:6px;align-items:center;font-size:11px;color:#12823b}
         .pmgm-notice{margin-left:auto;font-size:10px;color:#667085;max-width:460px;text-align:right;line-height:1.35}
         .pmgm-table-wrap{flex:1 1 auto;min-height:0;overflow:auto;background:#fff}
-        .pmgm-table{border-collapse:separate;border-spacing:0;min-width:1500px;width:100%;table-layout:fixed}
+        .pmgm-table{border-collapse:separate;border-spacing:0;min-width:1950px;width:100%;table-layout:fixed}
         .pmgm-table th,.pmgm-table td{border-right:1px solid #e1e5eb;border-bottom:1px solid #e1e5eb;padding:8px 9px;font-size:10px;vertical-align:top;background:#fff}
         .pmgm-table th{position:sticky;top:0;z-index:4;background:#f2f4f7;color:#111827;font-weight:800;text-align:center}
         .pmgm-table .sticky-code{position:sticky;left:0;z-index:3;background:#fff}
@@ -249,6 +277,10 @@ export default async function ManageGoalsPMGMPage({
             <span className="pmgm-status-circle">{activeCount}</span>
             <strong>Aktif</strong>
           </Link>
+          <div className="pmgm-status-link previous">
+            <span className="pmgm-status-circle">0</span>
+            <strong>Previous Job</strong>
+          </div>
           <Link href={`/manage-goals?employee_id=${selectedEmployeeId || ""}&status=inactive`} className={`pmgm-status-link inactive ${statusFilter === "inactive" ? "selected" : ""}`}>
             <span className="pmgm-status-circle">{inactiveCount}</span>
             <strong>Non Aktif</strong>
@@ -259,7 +291,7 @@ export default async function ManageGoalsPMGMPage({
           </Link>
           <div className="pmgm-complete">● {kpis.length} KPI terpetakan</div>
           <div className="pmgm-notice">
-            T = target KPI yang sudah dikonfigurasi (ditampilkan pada bulan ke-6). R = rata-rata kumulatif skor final seluruh task berstatus Approved yang mendukung KPI tersebut sampai akhir bulan.
+            T = target KPI yang sudah dikonfigurasi (ditampilkan pada bulan ke-6). R = rata-rata kumulatif skor final task yang sudah Approved dan terhubung ke KPI tersebut. Carry over tetap dibukukan ke bulan/periode task asal, bukan bulan saat divalidasi.
           </div>
         </section>
 
@@ -276,6 +308,11 @@ export default async function ManageGoalsPMGMPage({
               <col style={{ width: 100 }} />
               <col style={{ width: 78 }} />
               {months.map((month) => <col key={month} style={{ width: 105 }} />)}
+              <col style={{ width: 120 }} />
+              <col style={{ width: 120 }} />
+              <col style={{ width: 145 }} />
+              <col style={{ width: 110 }} />
+              <col style={{ width: 80 }} />
             </colgroup>
             <thead>
               <tr>
@@ -289,6 +326,11 @@ export default async function ManageGoalsPMGMPage({
                 <th>Tipe Cascading</th>
                 <th>Jumlah Target</th>
                 {months.map((month) => <th key={month}>{monthLabel(month)}</th>)}
+                <th>Pengisian Kualitas</th>
+                <th>Pengisian Waktu</th>
+                <th>Pengisian Target Kuantitas Range</th>
+                <th>Realisasi Range</th>
+                <th>IP</th>
               </tr>
             </thead>
             <tbody>
@@ -311,7 +353,7 @@ export default async function ManageGoalsPMGMPage({
                   <td>Non Direct</td>
                   <td style={{ textAlign: "center" }}>1</td>
                   {months.map((month, index) => {
-                    const realization = cumulativeRealization(kpi.id, month);
+                    const realization = cumulativeMetric(kpi.id, month, "score");
                     const target = index === 5 && kpi.achievement != null ? Number(kpi.achievement) : null;
                     return (
                       <td key={month}>
@@ -322,10 +364,32 @@ export default async function ManageGoalsPMGMPage({
                       </td>
                     );
                   })}
+                  <td>
+                    <div className="pmgm-month">
+                      <span><strong>T:</strong>100</span>
+                      <span><strong>R:</strong>{formatScore(cumulativeMetric(kpi.id, finalMonth, "quality"))}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="pmgm-month">
+                      <span><strong>T:</strong>100</span>
+                      <span><strong>R:</strong>{formatScore(cumulativeMetric(kpi.id, finalMonth, "timeliness"))}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="pmgm-month" style={{ gap: 5 }}>
+                      <span>Titik 1: -</span>
+                      <span>Titik 2: -</span>
+                      <span>Titik 3: -</span>
+                      <span>Titik 4: -</span>
+                    </div>
+                  </td>
+                  <td>{formatScore(cumulativeMetric(kpi.id, finalMonth, "completion"))}</td>
+                  <td><strong>{formatScore(cumulativeMetric(kpi.id, finalMonth, "score"))}</strong></td>
                 </tr>
               ))}
               {visibleKpis.length === 0 ? (
-                <tr><td colSpan={15} className="pmgm-empty">Belum ada KPI pada filter ini untuk pegawai terpilih.</td></tr>
+                <tr><td colSpan={20} className="pmgm-empty">Belum ada KPI pada filter ini untuk pegawai terpilih.</td></tr>
               ) : null}
             </tbody>
           </table>
