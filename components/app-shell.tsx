@@ -14,6 +14,7 @@ export function AppShell({ children, role, name }: { children: React.ReactNode; 
           {supervisor ? (
             <>
               <Link href="/tasks">Team Tasks</Link>
+              <Link href="/manage-goals">Manage Goals PMGM</Link>
               {admin ? <Link href="/employee-entry">Employee Entry Review</Link> : null}
               <Link href="/reviews">Validation & Evaluation</Link>
             </>
