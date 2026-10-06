@@ -137,8 +137,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         .teamtasks-page .flash-message{margin:0}
         .teamtasks-assign-fit{height:calc(100vh - 44px);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:7px}
         .teamtasks-assign-fit .topbar{margin-bottom:2px;flex:0 0 auto}
-        .teamtasks-assign-fit .page-title h1{font-size:22px;line-height:1.05}
-        .teamtasks-assign-fit .page-title p{font-size:11px;line-height:1.25}
+        /* Keep Team Tasks header dimensions identical between Assign Task and Daftar Task. */
         .teamtasks-assign-fit .page-tabs{margin:0;flex:0 0 auto}
         .teamtasks-assign-fit .tab-panel{flex:1 1 auto;min-height:0;overflow:hidden}
         .teamtasks-assign-fit .card.compact{padding:10px 12px;display:flex;flex-direction:column}
@@ -152,8 +151,8 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         .teamtasks-assign-fit .field small{font-size:10px;line-height:1.15}
         .teamtasks-assign-fit .btn{padding:7px 10px;font-size:12px}
         @supports selector(:has(*)){
-          .main:has(.teamtasks-assign-fit){height:100vh;overflow:hidden;padding-top:12px;padding-bottom:12px}
-          .main:has(.teamtasks-assign-fit) .teamtasks-assign-fit{height:calc(100vh - 24px)}
+          .main:has(.teamtasks-assign-fit){height:100vh;overflow:hidden;padding-top:22px;padding-bottom:22px}
+          .main:has(.teamtasks-assign-fit) .teamtasks-assign-fit{height:calc(100vh - 44px)}
         }
         @media(max-width:1100px){
           .teamtasks-table th,.teamtasks-table td{padding:6px 6px;font-size:10px}
