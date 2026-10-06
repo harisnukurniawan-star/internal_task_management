@@ -14,8 +14,13 @@ function tupoksiFor(task: any) {
   return Array.isArray(task.employee_tupoksi) ? task.employee_tupoksi[0] : task.employee_tupoksi;
 }
 
-export default async function MyTasksPage({ searchParams }: { searchParams: Promise<FlashParams> }) {
+type MyTasksSearchParams = FlashParams & { task?: string };
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export default async function MyTasksPage({ searchParams }: { searchParams: Promise<MyTasksSearchParams> }) {
   const params = await searchParams;
+  const selectedTaskId = typeof params.task === "string" && UUID_PATTERN.test(params.task) ? params.task : null;
   const { supabase, profile } = await requireProfile();
   const [employee, period] = await Promise.all([
     getEmployeeForProfile(profile.id, supabase),
@@ -23,13 +28,26 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
   ]);
   if (!employee) return <p>Employee profile belum ditautkan.</p>;
 
+  const taskSelect = "id,period_id,title,description,status,priority,complexity,due_at,support_kpi_id,support_tupoksi_id,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)";
+
   let taskQuery = supabase
     .from("tasks")
-    .select("id,title,description,status,priority,complexity,due_at,support_kpi_id,support_tupoksi_id,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)")
+    .select(taskSelect)
     .eq("assigned_to", employee.id);
   if (period) taskQuery = taskQuery.eq("period_id", period.id);
   const { data: taskRows } = await taskQuery.order("created_at", { ascending: false });
   const tasks = taskRows ?? [];
+
+  if (selectedTaskId && !tasks.some((task) => task.id === selectedTaskId)) {
+    const { data: selectedTask } = await supabase
+      .from("tasks")
+      .select(taskSelect)
+      .eq("id", selectedTaskId)
+      .eq("assigned_to", employee.id)
+      .maybeSingle();
+    if (selectedTask) tasks.unshift(selectedTask);
+  }
+
   const taskIds = tasks.map((task) => task.id);
 
   const latestByTask = new Map<string, any>();
@@ -111,7 +129,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
           const hasEvidence = (claim?.evidence_files?.length ?? 0) > 0;
 
           return (
-            <details className="task-accordion" name="employee-task" key={task.id}>
+            <details className="task-accordion" name="employee-task" key={task.id} open={task.id === selectedTaskId}>
               <summary className="task-tile-summary">
                 <div className="task-tile-main">
                   <strong>{task.title}</strong>
