@@ -1,7 +1,47 @@
 import Link from "next/link";
 import { logout } from "@/app/(auth)/login/actions";
 
-export function AppShell({ children, role, name }: { children: React.ReactNode; role: string; name: string }) {
+function NotificationBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  const label = count > 99 ? "99+" : String(count);
+  return (
+    <span
+      aria-label={`${count} notifikasi`}
+      style={{
+        minWidth: 18,
+        height: 18,
+        padding: count > 9 ? "0 5px" : 0,
+        borderRadius: 999,
+        background: "#f97316",
+        color: "#ffffff",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 10,
+        lineHeight: 1,
+        fontWeight: 800,
+        flex: "0 0 auto",
+        boxShadow: "0 0 0 2px #2a3587",
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+export function AppShell({
+  children,
+  role,
+  name,
+  validationCount = 0,
+  assignmentCount = 0,
+}: {
+  children: React.ReactNode;
+  role: string;
+  name: string;
+  validationCount?: number;
+  assignmentCount?: number;
+}) {
   const supervisor = role === "supervisor" || role === "admin";
   const admin = role === "admin";
   const roleLabel = admin ? "Admin" : supervisor ? "Supervisor" : "Employee";
@@ -15,12 +55,18 @@ export function AppShell({ children, role, name }: { children: React.ReactNode; 
             <>
               <Link href="/tasks">Team Tasks</Link>
               {admin ? <Link href="/employee-entry">Employee Entry Review</Link> : null}
-              <Link href="/reviews">Validation & Evaluation</Link>
+              <Link href="/reviews" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span>Validation & Evaluation</span>
+                <NotificationBadge count={validationCount} />
+              </Link>
             </>
           ) : (
             <>
               <Link href="/my-week">My Week</Link>
-              <Link href="/my-tasks">My Tasks</Link>
+              <Link href="/my-tasks" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <span>My Tasks</span>
+                <NotificationBadge count={assignmentCount} />
+              </Link>
             </>
           )}
           <Link href="/leaderboard">Leaderboard</Link>

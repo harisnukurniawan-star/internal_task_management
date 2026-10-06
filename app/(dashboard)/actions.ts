@@ -85,6 +85,7 @@ export async function createTask(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
   revalidatePath("/leaderboard");
+  revalidatePath("/", "layout");
   jump("/tasks", "ok", "Task berhasil di-assign.");
 }
 
@@ -193,6 +194,7 @@ export async function submitClaim(formData: FormData) {
   revalidatePath("/reviews");
   revalidatePath("/dashboard");
   revalidatePath("/leaderboard");
+  revalidatePath("/", "layout");
 
   if (warning) myTaskJump(taskId, "warning", warning);
   myTaskJump(taskId, "ok", `Realisasi versi ${version} berhasil dikirim.`);
@@ -262,6 +264,7 @@ export async function evaluateClaim(formData: FormData) {
   revalidatePath("/my-week");
   revalidatePath("/leaderboard");
   revalidatePath("/dashboard");
+  revalidatePath("/", "layout");
   if (decision === "revision") {
     reviewJump(returnPage, "ok", "Aktivitas dikembalikan ke staff untuk direvisi. Form staff tetap aktif.");
   }
