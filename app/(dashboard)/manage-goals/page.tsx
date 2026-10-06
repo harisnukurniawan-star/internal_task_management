@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
-import { getCurrentPeriod } from "@/lib/data";
+import { getCurrentPeriod, getEmployeeForProfile } from "@/lib/data";
 
 type ManageGoalsParams = {
   employee_id?: string;
@@ -114,27 +114,39 @@ export default async function ManageGoalsPMGMPage({
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
 
-  if (!["admin", "supervisor"].includes(profile.role)) {
-    return <p>Unauthorized</p>;
-  }
+  const supervisor = profile.role === "supervisor" || profile.role === "admin";
 
-  const [period, employeeResult] = await Promise.all([
-    getCurrentPeriod(supabase),
-    supabase
+  const period = await getCurrentPeriod(supabase);
+  let employees: Array<{ id: string; full_name: string; display_order?: number | null }> = [];
+  let selectedEmployeeId: string | undefined;
+
+  if (supervisor) {
+    const { data: employeeData } = await supabase
       .from("employees")
       .select("id,full_name,display_order")
       .eq("active", true)
-      .order("display_order"),
-  ]);
+      .order("display_order");
 
-  const excludedNames = new Set(["harisnu kurniawan", "muhammad choiri"]);
-  const employees = (employeeResult.data ?? []).filter(
-    (item) => !excludedNames.has(String(item.full_name || "").trim().toLowerCase()),
-  );
+    const excludedNames = new Set(["harisnu kurniawan", "muhammad choiri"]);
+    employees = (employeeData ?? []).filter(
+      (item) => !excludedNames.has(String(item.full_name || "").trim().toLowerCase()),
+    );
 
-  const selectedEmployeeId = employees.some((item) => item.id === params.employee_id)
-    ? params.employee_id!
-    : employees[0]?.id;
+    selectedEmployeeId = employees.some((item) => item.id === params.employee_id)
+      ? params.employee_id!
+      : employees[0]?.id;
+  } else {
+    const ownEmployee = await getEmployeeForProfile(profile.id, supabase);
+    if (ownEmployee?.active) {
+      employees = [{
+        id: ownEmployee.id,
+        full_name: ownEmployee.full_name,
+        display_order: ownEmployee.display_order,
+      }];
+      selectedEmployeeId = ownEmployee.id;
+    }
+  }
+
   const selectedEmployee = employees.find((item) => item.id === selectedEmployeeId);
 
   const referenceDate = period?.week_start ?? new Date().toISOString().slice(0, 10);
@@ -267,9 +279,10 @@ export default async function ManageGoalsPMGMPage({
     `/manage-goals?employee_id=${encodeURIComponent(employeeId)}&status=${statusFilter}`;
 
   return (
-    <div className="pmgm-shell">
+    <div className={`pmgm-shell ${supervisor ? "" : "pmgm-self-only"}`}>
       <style>{`
         .pmgm-shell{height:calc(100vh - 44px);display:grid;grid-template-columns:230px minmax(0,1fr);border:1px solid var(--line);background:#fff;overflow:hidden}
+        .pmgm-shell.pmgm-self-only{grid-template-columns:minmax(0,1fr)}
         .pmgm-people{border-right:1px solid #d9dee8;background:#fff;min-width:0;display:flex;flex-direction:column}
         .pmgm-people-title{padding:13px 12px 10px;font-size:16px;font-weight:800;color:#111827;border-bottom:1px solid var(--line)}
         .pmgm-search{margin:9px 10px;padding:7px 9px;border:1px solid #bcc6d6;border-radius:3px;font-size:12px;color:var(--muted)}
@@ -317,6 +330,7 @@ export default async function ManageGoalsPMGMPage({
         @media(max-width:1100px){.pmgm-shell{grid-template-columns:190px minmax(0,1fr)}}
       `}</style>
 
+      {supervisor ? (
       <aside className="pmgm-people">
         <div className="pmgm-people-title">People Selector</div>
         <div className="pmgm-search">Search direct report</div>
@@ -338,6 +352,7 @@ export default async function ManageGoalsPMGMPage({
           ))}
         </div>
       </aside>
+      ) : null}
 
       <main className="pmgm-main">
         <div className="pmgm-app-tabs">
