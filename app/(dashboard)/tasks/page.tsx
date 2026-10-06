@@ -112,7 +112,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const visibleTasks = tasks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className={activeTab === "list" ? "teamtasks-page teamtasks-list-fit" : "teamtasks-page"}>
+    <div className={activeTab === "list" ? "teamtasks-page teamtasks-list-fit" : "teamtasks-page teamtasks-assign-fit"}>
       <style>{`
         .teamtasks-list-fit{height:calc(100vh - 44px);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:7px}
         .teamtasks-list-fit .topbar{margin-bottom:2px;flex:0 0 auto}
@@ -135,10 +135,36 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         .teamtasks-pagination{min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;position:relative;z-index:80;background:#fff;padding:2px 0 1px}
         .teamtasks-pagination .btn{padding:6px 9px;font-size:11px;pointer-events:auto}
         .teamtasks-page .flash-message{margin:0}
+        .teamtasks-assign-fit{height:calc(100vh - 44px);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:7px}
+        .teamtasks-assign-fit .topbar{margin-bottom:2px;flex:0 0 auto}
+        .teamtasks-assign-fit .page-title h1{font-size:22px;line-height:1.05}
+        .teamtasks-assign-fit .page-title p{font-size:11px;line-height:1.25}
+        .teamtasks-assign-fit .page-tabs{margin:0;flex:0 0 auto}
+        .teamtasks-assign-fit .tab-panel{flex:1 1 auto;min-height:0;overflow:hidden}
+        .teamtasks-assign-fit .card.compact{padding:10px 12px;display:flex;flex-direction:column}
+        .teamtasks-assign-fit .card h3{margin:0 0 7px;font-size:15px;line-height:1.1}
+        .teamtasks-assign-fit .form{gap:6px;min-height:0;flex:1 1 auto}
+        .teamtasks-assign-fit .form-row{gap:8px}
+        .teamtasks-assign-fit .field{gap:3px}
+        .teamtasks-assign-fit .field label{font-size:11px;line-height:1.15}
+        .teamtasks-assign-fit .field input,.teamtasks-assign-fit .field textarea,.teamtasks-assign-fit .field select{padding:6px 8px;font-size:12px;border-radius:8px}
+        .teamtasks-assign-fit .field textarea{min-height:58px;max-height:58px;resize:none}
+        .teamtasks-assign-fit .field small{font-size:10px;line-height:1.15}
+        .teamtasks-assign-fit .btn{padding:7px 10px;font-size:12px}
+        @supports selector(:has(*)){
+          .main:has(.teamtasks-assign-fit){height:100vh;overflow:hidden;padding-top:12px;padding-bottom:12px}
+          .main:has(.teamtasks-assign-fit) .teamtasks-assign-fit{height:calc(100vh - 24px)}
+        }
         @media(max-width:1100px){
           .teamtasks-table th,.teamtasks-table td{padding:6px 6px;font-size:10px}
           .teamtasks-table tbody tr{height:48px}
           .teamtasks-table td{max-height:48px}
+        }
+        @media(max-width:900px){
+          .main:has(.teamtasks-assign-fit){height:auto;overflow:visible;padding-top:14px;padding-bottom:14px}
+          .teamtasks-assign-fit,.main:has(.teamtasks-assign-fit) .teamtasks-assign-fit{height:auto;overflow:visible}
+          .teamtasks-assign-fit .tab-panel{overflow:visible}
+          .teamtasks-assign-fit .field textarea{min-height:82px;max-height:none;resize:vertical}
         }
       `}</style>
       <PageHeader title="Team Tasks" subtitle={period ? `${period.label} · task minggu berjalan + seluruh task bawahan yang masih open dari periode sebelumnya.` : "Menampilkan seluruh task bawahan yang masih open."} />
