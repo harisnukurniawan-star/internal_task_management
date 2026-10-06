@@ -1,4 +1,3 @@
-import { PageHeader } from "@/components/page-header";
 import { requireProfile } from "@/lib/auth";
 import { getCurrentPeriod, getEmployeeForProfile } from "@/lib/data";
 
@@ -90,50 +89,10 @@ function linePoints(values: number[], width = 620, height = 170) {
     .join(" ");
 }
 
-async function EmployeeDashboard({
-  supabase,
-  profile,
-}: {
-  supabase: any;
-  profile: any;
-}) {
-  const [period, employee] = await Promise.all([
-    getCurrentPeriod(supabase),
-    getEmployeeForProfile(profile.id, supabase),
-  ]);
-
-  let query = supabase.from("tasks").select("id,status,assigned_to");
-  if (period) query = query.eq("period_id", period.id);
-  if (employee) query = query.eq("assigned_to", employee.id);
-  const { data: taskRows } = await query;
-  const tasks = taskRows ?? [];
-  const stats = {
-    total: tasks.length,
-    submitted: tasks.filter((t: any) => t.status === "submitted").length,
-    approved: tasks.filter((t: any) => t.status === "approved").length,
-    revision: tasks.filter((t: any) => t.status === "revision").length,
-  };
-
-  return (
-    <>
-      <PageHeader title="Dashboard" subtitle={period ? `${period.label} · ${period.week_start} s.d. ${period.week_end}` : "Periode aktif belum tersedia"} />
-      <div className="cards">
-        <div className="card"><span className="muted">Total task</span><div className="metric">{stats.total}</div></div>
-        <div className="card"><span className="muted">Submitted</span><div className="metric">{stats.submitted}</div></div>
-        <div className="card"><span className="muted">Approved</span><div className="metric">{stats.approved}</div></div>
-        <div className="card"><span className="muted">Revision</span><div className="metric">{stats.revision}</div></div>
-      </div>
-    </>
-  );
-}
-
 export default async function DashboardPage() {
   const { supabase, profile } = await requireProfile();
   const supervisor = profile.role === "supervisor" || profile.role === "admin";
-
-  if (!supervisor) {
-    return <EmployeeDashboard supabase={supabase} profile={profile} />;
-  }
+  const employee = supervisor ? null : await getEmployeeForProfile(profile.id, supabase);
 
   const currentPeriod = await getCurrentPeriod(supabase);
   const referenceDate = currentPeriod?.week_start ?? new Date().toISOString().slice(0, 10);
@@ -152,11 +111,17 @@ export default async function DashboardPage() {
   const periodMap = new Map(periods.map((item: any) => [item.id, item]));
 
   let tasks: any[] = [];
-  if (periodIds.length > 0) {
-    const { data } = await supabase
+  if (periodIds.length > 0 && (supervisor || employee?.id)) {
+    let taskQuery = supabase
       .from("tasks")
       .select("id,period_id,title,status,assigned_to,support_kpi_id,due_at,complexity,employees!tasks_assigned_to_fkey(full_name),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description),task_claims(id,version,submitted_at,task_evaluations(decision,quality_score,timeliness_score,completion_score,evaluated_at))")
       .in("period_id", periodIds);
+
+    if (!supervisor && employee?.id) {
+      taskQuery = taskQuery.eq("assigned_to", employee.id);
+    }
+
+    const { data } = await taskQuery;
     tasks = data ?? [];
   }
 
@@ -320,9 +285,13 @@ export default async function DashboardPage() {
       <div className="sd-head">
         <div>
           <div className="sd-title">Semester Performance Dashboard</div>
-          <div className="sd-sub">{semester.label} · seluruh periode dalam semester yang sama</div>
+          <div className="sd-sub">
+            {semester.label} · {supervisor ? "seluruh periode tim dalam semester yang sama" : "seluruh periode saya dalam semester yang sama"}
+          </div>
         </div>
-        <div className="sd-badge">{periods.length} periode · update dari task & validation</div>
+        <div className="sd-badge">
+          {supervisor ? `${periods.length} periode · update dari task & validation` : `${employee?.full_name || "Staff"} · ${periods.length} periode`}
+        </div>
       </div>
 
       <section className="sd-cards">
@@ -446,7 +415,7 @@ export default async function DashboardPage() {
         <div className="sd-panel">
           <div className="sd-panel-head">
             <div className="sd-panel-title">Carry Over Monitor</div>
-            <div className="sd-panel-note">{carryOverTasks.length} task masih terbuka</div>
+            <div className="sd-panel-note">{supervisor ? `${carryOverTasks.length} task masih terbuka` : `${carryOverTasks.length} task saya masih terbuka`}</div>
           </div>
           {carryOverRows.length > 0 ? (
             <table className="sd-carry-table">
