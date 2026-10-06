@@ -297,9 +297,9 @@ export default async function ManageGoalsPMGMPage({
         .pmgm-status-link.selected{border-bottom:2px solid #ff3d4d;padding-bottom:5px}
         .pmgm-complete{display:flex;gap:6px;align-items:center;font-size:11px;color:#12823b}
         .pmgm-table-wrap{flex:1 1 auto;min-height:0;overflow:auto;background:#fff}
-        .pmgm-table{border-collapse:separate;border-spacing:0;min-width:1950px;width:100%;table-layout:fixed}
+        .pmgm-table{border-collapse:separate;border-spacing:0;min-width:2100px;width:100%;table-layout:fixed}
         .pmgm-table th,.pmgm-table td{border-right:1px solid #e1e5eb;border-bottom:1px solid #e1e5eb;padding:8px 9px;font-size:10px;vertical-align:top;background:#fff}
-        .pmgm-table th{position:sticky;top:0;z-index:4;background:#f2f4f7;color:#111827;font-weight:800;text-align:center}
+        .pmgm-table th{position:sticky;top:0;z-index:4;background:#f2f4f7;color:#111827;font-weight:800;text-align:center;white-space:normal;overflow:visible;word-break:normal;line-height:1.25}
         .pmgm-table .sticky-code{position:sticky;left:0;z-index:3;background:#fff}
         .pmgm-table th.sticky-code{z-index:6;background:#f2f4f7}
         .pmgm-table .sticky-desc{position:sticky;left:135px;z-index:3;background:#fff}
@@ -386,13 +386,13 @@ export default async function ManageGoalsPMGMPage({
               <col style={{ width: 92 }} />
               <col style={{ width: 92 }} />
               <col style={{ width: 100 }} />
-              <col style={{ width: 78 }} />
+              <col style={{ width: 95 }} />
               {months.map((month) => <col key={month} style={{ width: 105 }} />)}
-              <col style={{ width: 120 }} />
-              <col style={{ width: 120 }} />
-              <col style={{ width: 145 }} />
-              <col style={{ width: 110 }} />
-              <col style={{ width: 80 }} />
+              <col style={{ width: 130 }} />
+              <col style={{ width: 130 }} />
+              <col style={{ width: 195 }} />
+              <col style={{ width: 135 }} />
+              <col style={{ width: 95 }} />
             </colgroup>
             <thead>
               <tr>
@@ -470,8 +470,8 @@ export default async function ManageGoalsPMGMPage({
                       <span>Titik 4: -</span>
                     </div>
                   </td>
-                  <td>{formatScore(cumulativeMetric(kpi.id, finalMonth, "completion"))}</td>
-                  <td><strong>{formatScore(cumulativeMetric(kpi.id, finalMonth, "score"))}</strong></td>
+                  <td>-</td>
+                  <td><strong>-</strong></td>
                 </tr>
               ))}
               {visibleKpis.length === 0 ? (
