@@ -5,7 +5,8 @@ import { StatusBadge } from "@/components/status-badge";
 import { requireProfile } from "@/lib/auth";
 import { getCurrentPeriod } from "@/lib/data";
 import { COMPLEXITY_OPTIONS, complexityLabel } from "@/lib/scoring";
-import { createTaskWithKpi, deleteTask, updateTask } from "./actions";
+import { createTaskWithKpi, updateTask } from "./actions";
+import { TaskActionMenu } from "./task-action-menu";
 import { TaskIdentityFields } from "./support-kpi-fields";
 
 type TaskSearchParams = FlashParams & { edit?: string; tab?: string; page?: string };
@@ -131,8 +132,6 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         .teamtasks-table .badge{font-size:9px;padding:3px 6px;white-space:nowrap}
         .teamtasks-table .btn{font-size:10px;padding:5px 7px;white-space:nowrap}
         .teamtasks-table td.teamtasks-action-cell{overflow:visible!important}
-        .teamtasks-action-cell details{position:relative;z-index:25}
-        .teamtasks-action-cell details[open]{z-index:50}
         .teamtasks-pagination{height:34px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto}
         .teamtasks-pagination .btn{padding:6px 9px;font-size:11px}
         .teamtasks-page .flash-message{margin:0}
@@ -279,17 +278,12 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                             <span className="muted small">Monitor</span>
                           )
                         ) : (
-                          <details style={{ position: "relative", display: "inline-block" }}>
-                            <summary aria-label={`Action ${task.title}`} title="Action" style={{ cursor: "pointer", listStyle: "none", width: 30, height: 30, display: "grid", placeItems: "center", borderRadius: 8, fontSize: 22, fontWeight: 700, color: "#475467", userSelect: "none" }}>⋮</summary>
-                            <div style={{ position: "absolute", right: 0, top: 34, zIndex: 20, minWidth: 178, padding: 6, border: "1px solid #dbe4ef", borderRadius: 9, background: "white", boxShadow: "0 10px 28px #0b1f3a1a", textAlign: "left" }}>
-                              <Link prefetch href={`/tasks?tab=list&page=${currentPage}&edit=${task.id}#edit-task`} style={{ display: "block", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12 }}>Edit task</Link>
-                              {hasSubmission ? <span className="muted small" style={{ display: "block", padding: "2px 10px 6px" }}>Submission ada · employee terkunci</span> : null}
-                              <form action={deleteTask}>
-                                <input type="hidden" name="task_id" value={task.id} />
-                                <button type="submit" style={{ width: "100%", border: 0, background: "transparent", color: "#b42318", textAlign: "left", padding: "8px 10px", borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Hapus task</button>
-                              </form>
-                            </div>
-                          </details>
+                          <TaskActionMenu
+                            taskId={task.id}
+                            taskTitle={task.title}
+                            currentPage={currentPage}
+                            hasSubmission={hasSubmission}
+                          />
                         )}
                       </td>
                     </tr>
