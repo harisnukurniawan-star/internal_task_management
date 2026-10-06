@@ -46,13 +46,19 @@ function formatScore(value: number | null) {
 }
 
 type ApprovedMetric = {
-  periodDate: string;
+  deadlineDate: string;
   score: number;
   quality: number;
   timeliness: number;
   completion: number;
   complexity: number;
 };
+
+const PMGM_TRACKING_START = { year: 2026, month: 9 };
+
+function isTrackingMonth(year: number, month: number) {
+  return year > PMGM_TRACKING_START.year || (year === PMGM_TRACKING_START.year && month >= PMGM_TRACKING_START.month);
+}
 
 export default async function ManageGoalsPMGMPage({
   searchParams,
@@ -101,7 +107,7 @@ export default async function ManageGoalsPMGMPage({
         .order("kpi_code"),
       supabase
         .from("tasks")
-        .select("id,support_kpi_id,due_at,weekly_periods(week_start),task_claims(id,version,submitted_at,task_evaluations(decision,score,quality_score,timeliness_score,completion_score,complexity_score,evaluated_at))")
+        .select("id,support_kpi_id,due_at,task_claims(id,version,submitted_at,task_evaluations(decision,score,quality_score,timeliness_score,completion_score,complexity_score,evaluated_at))")
         .eq("assigned_to", selectedEmployeeId)
         .not("support_kpi_id", "is", null),
     ]);
@@ -125,26 +131,23 @@ export default async function ManageGoalsPMGMPage({
     const latestClaim = [...claims].sort((a, b) => Number(b.version || 0) - Number(a.version || 0))[0];
     if (!latestClaim) continue;
 
+    // Screening: hanya submission versi terbaru yang sudah Approved.
     const evaluation = relationOne(latestClaim.task_evaluations);
-    if (!evaluation || evaluation.decision !== "approved" || !evaluation.evaluated_at) continue;
+    if (!evaluation || evaluation.decision !== "approved") continue;
 
-    const taskPeriod = relationOne(task.weekly_periods);
-    const periodDate =
-      String(taskPeriod?.week_start || "").slice(0, 10) ||
-      String(task.due_at || "").slice(0, 10) ||
-      String(evaluation.evaluated_at).slice(0, 10);
-
-    if (!periodDate || periodDate < semester.start || periodDate > semester.end) continue;
+    // Realisasi bulanan mengikuti bulan deadline aktivitas.
+    const deadlineDate = String(task.due_at || "").slice(0, 10);
+    if (!deadlineDate || deadlineDate < semester.start || deadlineDate > semester.end) continue;
 
     const metric: ApprovedMetric = {
-      periodDate,
+      deadlineDate,
       score: Number(evaluation.score),
       quality: Number(evaluation.quality_score),
       timeliness: Number(evaluation.timeliness_score),
       completion: Number(evaluation.completion_score),
       complexity: Number(evaluation.complexity_score),
     };
-    if (!Number.isFinite(metric.score)) continue;
+    if (!Number.isFinite(metric.completion)) continue;
 
     const existing = approvedMetricsByKpi.get(task.support_kpi_id) ?? [];
     existing.push(metric);
@@ -154,6 +157,22 @@ export default async function ManageGoalsPMGMPage({
   const months = Array.from({ length: 6 }, (_, index) => semester.startMonth + index);
   const finalMonth = months[months.length - 1];
 
+  function monthlyCompletion(kpiId: string, month: number) {
+    if (!isTrackingMonth(semester.year, month)) return null;
+    const rows = approvedMetricsByKpi.get(kpiId) ?? [];
+    const eligible = rows.filter((item) => {
+      const [yearText, monthText] = item.deadlineDate.split("-");
+      return Number(yearText) === semester.year && Number(monthText) === month;
+    });
+    if (eligible.length === 0) return null;
+    const values = eligible
+      .map((item) => item.completion)
+      .filter((value) => Number.isFinite(value))
+      .map((value) => Math.min(100, Math.max(0, value)));
+    if (values.length === 0) return null;
+    return values.reduce((sum, value) => sum + value, 0) / values.length;
+  }
+
   function cumulativeMetric(
     kpiId: string,
     month: number,
@@ -161,15 +180,16 @@ export default async function ManageGoalsPMGMPage({
   ) {
     const rows = approvedMetricsByKpi.get(kpiId) ?? [];
     const eligible = rows.filter((item) => {
-      const [yearText, monthText] = item.periodDate.split("-");
-      return Number(yearText) === semester.year && Number(monthText) <= month;
+      const [yearText, monthText] = item.deadlineDate.split("-");
+      return Number(yearText) === semester.year
+        && Number(monthText) <= month
+        && isTrackingMonth(Number(yearText), Number(monthText));
     });
     if (eligible.length === 0) return null;
     const values = eligible.map((item) => item[field]).filter((value) => Number.isFinite(value));
     if (values.length === 0) return null;
     return values.reduce((sum, value) => sum + value, 0) / values.length;
   }
-
   const baseEmployeeQuery = (employeeId: string) =>
     `/manage-goals?employee_id=${encodeURIComponent(employeeId)}&status=${statusFilter}`;
 
@@ -291,7 +311,7 @@ export default async function ManageGoalsPMGMPage({
           </Link>
           <div className="pmgm-complete">● {kpis.length} KPI terpetakan</div>
           <div className="pmgm-notice">
-            T = target KPI yang sudah dikonfigurasi (ditampilkan pada bulan ke-6). R = rata-rata kumulatif skor final task yang sudah Approved dan terhubung ke KPI tersebut. Carry over tetap dibukukan ke bulan/periode task asal, bukan bulan saat divalidasi.
+            Mulai Bulan ke-3 (September 2026): T = 100%. R = rata-rata Completion hasil Validation dari seluruh aktivitas versi terbaru yang sudah Approved dan terhubung ke Support KPI tersebut, dikelompokkan berdasarkan bulan deadline aktivitas.
           </div>
         </section>
 
@@ -352,9 +372,10 @@ export default async function ManageGoalsPMGMPage({
                   <td>{semester.end}</td>
                   <td>Non Direct</td>
                   <td style={{ textAlign: "center" }}>1</td>
-                  {months.map((month, index) => {
-                    const realization = cumulativeMetric(kpi.id, month, "score");
-                    const target = index === 5 ? Math.min(Number(kpi.achievement ?? 100), 100) : null;
+                  {months.map((month) => {
+                    const tracked = isTrackingMonth(semester.year, month);
+                    const realization = monthlyCompletion(kpi.id, month);
+                    const target = tracked ? 100 : null;
                     return (
                       <td key={month}>
                         <div className="pmgm-month">
