@@ -317,8 +317,6 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
           ) : null}
         </div>
       )}
-    </>
-  );
     </div>
   );
 }
