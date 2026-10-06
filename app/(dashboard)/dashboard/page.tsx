@@ -228,57 +228,63 @@ export default async function DashboardPage() {
   return (
     <div className="semester-dashboard">
       <style>{`
-        .semester-dashboard{height:calc(100vh - 44px);min-height:640px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
-        .sd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
-        .sd-title{font-size:22px;font-weight:800;color:#1f2b7b}
-        .sd-sub{margin-top:3px;font-size:12px;color:#667085}
-        .sd-badge{padding:7px 10px;border:1px solid #d8deea;border-radius:9px;background:#fff;font-size:11px;font-weight:700;color:#344054}
-        .sd-cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-        .sd-card{border:1px solid #e2e7f0;background:#fff;border-radius:12px;padding:11px 12px;min-width:0;box-shadow:0 1px 2px rgba(16,24,40,.03)}
-        .sd-card-label{font-size:10px;color:#667085;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .sd-card-value{font-size:24px;font-weight:800;color:#17226f;margin-top:4px;line-height:1}
-        .sd-card-note{font-size:9px;color:#98a2b3;margin-top:5px}
-        .sd-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.9fr);gap:10px;min-height:0}
-        .sd-grid.bottom{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);flex:1 1 auto}
-        .sd-panel{border:1px solid #e2e7f0;background:#fff;border-radius:12px;padding:11px 12px;min-width:0;min-height:0;overflow:hidden}
-        .sd-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
-        .sd-panel-title{font-size:13px;font-weight:800;color:#18206f}
-        .sd-panel-note{font-size:9px;color:#98a2b3}
-        .sd-trend{height:190px;display:grid;grid-template-rows:1fr auto;gap:3px}
-        .sd-trend svg{width:100%;height:158px;display:block}
-        .sd-legend{display:flex;gap:16px;align-items:center;font-size:9px;color:#667085}
-        .sd-key{display:inline-flex;align-items:center;gap:5px}
-        .sd-dot{width:8px;height:8px;border-radius:999px}
-        .sd-week-labels{display:grid;grid-template-columns:repeat(var(--weeks),1fr);gap:2px;font-size:8px;color:#98a2b3;text-align:center;margin:0 14px 0 34px}
-        .sd-status-wrap{display:grid;grid-template-columns:142px 1fr;gap:12px;align-items:center;height:190px}
-        .sd-donut{width:128px;height:128px;border-radius:999px;display:grid;place-items:center;position:relative;margin:auto}
-        .sd-donut:after{content:"";position:absolute;width:82px;height:82px;background:#fff;border-radius:999px}
+        .semester-dashboard{height:calc(100vh - 44px);min-height:0;display:grid;grid-template-rows:auto auto minmax(0,1.15fr) minmax(0,.85fr);gap:8px;overflow:hidden}
+        .sd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;min-height:0}
+        .sd-title{font-size:20px;font-weight:800;color:#1f2b7b;line-height:1.08}
+        .sd-sub{margin-top:2px;font-size:11px;color:#667085}
+        .sd-badge{padding:6px 9px;border:1px solid #d8deea;border-radius:9px;background:#fff;font-size:10px;font-weight:700;color:#344054}
+        .sd-cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;min-height:0}
+        .sd-card{border:1px solid #e2e7f0;background:#fff;border-radius:11px;padding:8px 10px;min-width:0;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+        .sd-card-label{font-size:9px;color:#667085;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .sd-card-value{font-size:21px;font-weight:800;color:#17226f;margin-top:3px;line-height:1}
+        .sd-card-note{font-size:8px;color:#98a2b3;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .sd-grid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(280px,.9fr);gap:8px;min-height:0;overflow:hidden}
+        .sd-grid.bottom{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+        .sd-panel{border:1px solid #e2e7f0;background:#fff;border-radius:11px;padding:8px 10px;min-width:0;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+        .sd-panel-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;flex:0 0 auto}
+        .sd-panel-title{font-size:12px;font-weight:800;color:#18206f;line-height:1.1}
+        .sd-panel-note{font-size:8px;color:#98a2b3;white-space:nowrap}
+        .sd-trend{flex:1 1 auto;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;gap:2px}
+        .sd-trend svg{width:100%;height:100%;min-height:110px;display:block}
+        .sd-legend{display:flex;gap:13px;align-items:center;font-size:8px;color:#667085}
+        .sd-key{display:inline-flex;align-items:center;gap:4px}
+        .sd-dot{width:7px;height:7px;border-radius:999px}
+        .sd-week-labels{display:grid;grid-template-columns:repeat(var(--weeks),1fr);gap:2px;font-size:7px;color:#98a2b3;text-align:center;margin:0 14px 0 34px}
+        .sd-status-wrap{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:126px 1fr;gap:10px;align-items:center}
+        .sd-donut{width:110px;height:110px;border-radius:999px;display:grid;place-items:center;position:relative;margin:auto}
+        .sd-donut:after{content:"";position:absolute;width:70px;height:70px;background:#fff;border-radius:999px}
         .sd-donut-center{position:relative;z-index:1;text-align:center}
-        .sd-donut-total{font-size:22px;font-weight:800;color:#17226f}
-        .sd-donut-label{font-size:9px;color:#98a2b3}
-        .sd-status-list{display:grid;gap:7px}
-        .sd-status-item{display:grid;grid-template-columns:8px 1fr auto;gap:7px;align-items:center;font-size:9px;color:#475467}
-        .sd-status-item strong{font-size:11px;color:#111827}
-        .sd-kpi-list{display:grid;gap:8px}
-        .sd-kpi-row{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(120px,1fr) 64px;gap:10px;align-items:center}
+        .sd-donut-total{font-size:20px;font-weight:800;color:#17226f}
+        .sd-donut-label{font-size:8px;color:#98a2b3}
+        .sd-status-list{display:grid;gap:5px}
+        .sd-status-item{display:grid;grid-template-columns:7px 1fr auto;gap:6px;align-items:center;font-size:8px;color:#475467}
+        .sd-status-item strong{font-size:10px;color:#111827}
+        .sd-kpi-list{flex:1 1 auto;min-height:0;display:grid;gap:4px;align-content:space-between}
+        .sd-kpi-row{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(120px,1fr) 60px;gap:8px;align-items:center;min-height:0}
         .sd-kpi-name{min-width:0}
-        .sd-kpi-code{font-size:10px;font-weight:800;color:#17226f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .sd-kpi-desc{font-size:9px;color:#667085;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-        .sd-bar-track{height:8px;border-radius:999px;background:#eef2f7;overflow:hidden}
+        .sd-kpi-code{font-size:9px;font-weight:800;color:#17226f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .sd-kpi-desc{font-size:8px;color:#667085;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+        .sd-bar-track{height:7px;border-radius:999px;background:#eef2f7;overflow:hidden}
         .sd-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#25368f,#10a6ca)}
-        .sd-kpi-metric{text-align:right;font-size:9px;color:#667085}
-        .sd-kpi-metric strong{display:block;font-size:11px;color:#111827}
-        .sd-carry-table{width:100%;border-collapse:collapse}
-        .sd-carry-table th,.sd-carry-table td{padding:7px 5px;border-bottom:1px solid #edf1f6;font-size:9px;text-align:left}
+        .sd-kpi-metric{text-align:right;font-size:8px;color:#667085;line-height:1.1}
+        .sd-kpi-metric strong{display:block;font-size:10px;color:#111827}
+        .sd-carry-table{width:100%;border-collapse:collapse;table-layout:fixed}
+        .sd-carry-table th,.sd-carry-table td{padding:5px 5px;border-bottom:1px solid #edf1f6;font-size:8px;text-align:left}
         .sd-carry-table th{color:#667085;font-weight:700}
-        .sd-carry-name{font-size:10px;font-weight:700;color:#111827}
-        .sd-age{display:inline-flex;padding:3px 6px;border-radius:999px;background:#fff7ed;color:#b45309;font-weight:700}
+        .sd-carry-name{font-size:9px;font-weight:700;color:#111827}
+        .sd-age{display:inline-flex;padding:2px 5px;border-radius:999px;background:#fff7ed;color:#b45309;font-weight:700}
         .sd-age.high{background:#fef2f2;color:#b42318}
-        .sd-empty{display:grid;place-items:center;height:130px;color:#98a2b3;font-size:10px;text-align:center}
+        .sd-empty{display:grid;place-items:center;flex:1 1 auto;min-height:0;color:#98a2b3;font-size:9px;text-align:center}
+        @supports selector(:has(*)){
+          .main:has(.semester-dashboard){height:100vh;overflow:hidden;padding-top:12px;padding-bottom:12px}
+          .main:has(.semester-dashboard) .semester-dashboard{height:calc(100vh - 24px)}
+        }
         @media(max-width:1180px){
           .sd-cards{grid-template-columns:repeat(3,minmax(0,1fr))}
-          .semester-dashboard{height:auto;overflow:visible}
+          .main:has(.semester-dashboard){height:auto;overflow:visible;padding-top:22px;padding-bottom:22px}
+          .semester-dashboard,.main:has(.semester-dashboard) .semester-dashboard{height:auto;overflow:visible;display:flex;flex-direction:column}
           .sd-grid,.sd-grid.bottom{grid-template-columns:1fr}
+          .sd-trend{min-height:190px}
         }
       `}</style>
 
