@@ -24,8 +24,7 @@ export function AppShell({ children, role, name }: { children: React.ReactNode; 
             </>
           )}
           <Link href="/leaderboard">Leaderboard</Link>
-          {supervisor ? (
-            <Link
+          <Link
               href="/manage-goals"
               style={{
                 display: "flex",
@@ -66,7 +65,6 @@ export function AppShell({ children, role, name }: { children: React.ReactNode; 
                 />
               </span>
             </Link>
-          ) : null}
         </nav>
         <form action={logout} style={{ marginTop: "auto" }}><button className="btn secondary" type="submit">Keluar</button></form>
       </aside>
