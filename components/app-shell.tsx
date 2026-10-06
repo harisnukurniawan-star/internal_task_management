@@ -24,7 +24,24 @@ export function AppShell({ children, role, name }: { children: React.ReactNode; 
             </>
           )}
           <Link href="/leaderboard">Leaderboard</Link>
-          {supervisor ? <Link href="/manage-goals">Manage Goals PMGM</Link> : null}
+          {supervisor ? (
+            <Link href="/manage-goals" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>Manage Goals PMGM</span>
+              <span
+                aria-label="SAP"
+                role="img"
+                style={{
+                  width: 34,
+                  height: 15,
+                  flex: "0 0 auto",
+                  backgroundImage: `url("${sap}")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "center",
+                  backgroundSize: "contain",
+                }}
+              />
+            </Link>
+          ) : null}
         </nav>
         <form action={logout} style={{ marginTop: "auto" }}><button className="btn secondary" type="submit">Keluar</button></form>
       </aside>
