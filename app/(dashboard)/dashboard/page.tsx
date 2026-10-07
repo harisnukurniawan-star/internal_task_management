@@ -290,7 +290,7 @@ export default async function DashboardPage() {
 
       <div className="sd-head">
         <div>
-          <div className="sd-title">Semester Performance Dashboard</div>
+          <div className="sd-title">Performance Dashboard</div>
           <div className="sd-sub">
             {semester.label} · {supervisor ? "seluruh periode tim dalam semester yang sama" : "seluruh periode saya dalam semester yang sama"}
           </div>
