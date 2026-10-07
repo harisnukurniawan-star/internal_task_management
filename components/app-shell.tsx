@@ -49,14 +49,22 @@ export function AppShell({
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <img
-            src="/task-manager-clean.svg"
-            alt="Task Manager"
-            width={2128}
-            height={739}
-            loading="eager"
-            style={{ display: "block", width: "100%", maxWidth: 260, height: "auto" }}
-          />
+          <div
+            role="img"
+            aria-label="Task Manager"
+            style={{
+              color: "#fff",
+              fontFamily: '"Arial Black", "Arial", sans-serif',
+              fontWeight: 900,
+              fontSize: 28,
+              lineHeight: 1,
+              letterSpacing: "-0.8px",
+              marginBottom: 8,
+            }}
+          >
+            <span aria-hidden="true" style={{ display: "block" }}>TASK</span>
+            <span aria-hidden="true" style={{ display: "block" }}>MANAGER</span>
+          </div>
           <small>{name} · {roleLabel}</small>
         </div>
         <nav className="nav">
