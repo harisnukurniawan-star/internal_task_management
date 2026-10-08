@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MAX_EVIDENCE_BYTES, MAX_EVIDENCE_FILES } from "@/lib/evidence";
 
 const ACCEPTED_EVIDENCE = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx";
@@ -11,31 +11,46 @@ function formatFileSize(bytes: number) {
 }
 
 export function EvidenceFileInput() {
+  const inputRef = useRef<HTMLInputElement>(null);
   const [message, setMessage] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
+  function syncInputFiles(files: File[]) {
+    const input = inputRef.current;
+    if (!input) return;
+    const transfer = new DataTransfer();
+    files.forEach((file) => transfer.items.add(file));
+    input.files = transfer.files;
+  }
+
   function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.currentTarget.files ?? []);
-    let nextMessage = "";
+    const incomingFiles = Array.from(event.currentTarget.files ?? []);
+    if (incomingFiles.length === 0) return;
 
-    if (files.length > MAX_EVIDENCE_FILES) {
-      nextMessage = `Maksimal ${MAX_EVIDENCE_FILES} file dalam satu submission.`;
-    } else {
-      const oversized = files.find((file) => file.size > MAX_EVIDENCE_BYTES);
-      if (oversized) {
-        nextMessage = `File "${oversized.name}" melebihi batas 3 MB.`;
-      }
-    }
-
-    if (nextMessage) {
-      event.currentTarget.value = "";
-      setSelectedFiles([]);
-      setMessage(nextMessage);
+    const oversized = incomingFiles.find((file) => file.size > MAX_EVIDENCE_BYTES);
+    if (oversized) {
+      setMessage(`File "${oversized.name}" melebihi batas 3 MB.`);
+      syncInputFiles(selectedFiles);
       return;
     }
 
-    setSelectedFiles(files);
+    const combinedFiles = [...selectedFiles, ...incomingFiles];
+    if (combinedFiles.length > MAX_EVIDENCE_FILES) {
+      setMessage(`Maksimal ${MAX_EVIDENCE_FILES} file. File yang sudah dipilih tetap dipertahankan.`);
+      syncInputFiles(selectedFiles);
+      return;
+    }
+
+    setSelectedFiles(combinedFiles);
     setMessage("");
+    requestAnimationFrame(() => syncInputFiles(combinedFiles));
+  }
+
+  function removeFile(index: number) {
+    const nextFiles = selectedFiles.filter((_, fileIndex) => fileIndex !== index);
+    setSelectedFiles(nextFiles);
+    setMessage("");
+    syncInputFiles(nextFiles);
   }
 
   const hasError = Boolean(message);
@@ -43,17 +58,18 @@ export function EvidenceFileInput() {
   return (
     <>
       <input
+        ref={inputRef}
         name="evidence"
         type="file"
         accept={ACCEPTED_EVIDENCE}
         multiple
-        required
+        required={selectedFiles.length === 0}
         onChange={handleChange}
       />
 
-      {hasError ? (
-        <small style={{ color: "var(--red)" }}>{message}</small>
-      ) : selectedFiles.length > 0 ? (
+      {hasError ? <small style={{ color: "var(--red)" }}>{message}</small> : null}
+
+      {selectedFiles.length > 0 ? (
         <div
           style={{
             marginTop: 4,
@@ -77,9 +93,7 @@ export function EvidenceFileInput() {
             <strong style={{ fontSize: 10, color: "var(--navy2)" }}>
               File sementara ({selectedFiles.length}/{MAX_EVIDENCE_FILES})
             </strong>
-            <span className="muted" style={{ fontSize: 9 }}>
-              Belum terupload
-            </span>
+            <span className="muted" style={{ fontSize: 9 }}>Belum terupload</span>
           </div>
 
           <div style={{ display: "grid" }}>
@@ -88,23 +102,14 @@ export function EvidenceFileInput() {
                 key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "22px minmax(0,1fr) auto",
+                  gridTemplateColumns: "22px minmax(0,1fr) auto auto",
                   alignItems: "center",
                   gap: 7,
                   padding: "6px 8px",
                   borderBottom: index < selectedFiles.length - 1 ? "1px solid var(--line)" : "0",
                 }}
               >
-                <span
-                  className="badge"
-                  style={{
-                    width: 20,
-                    height: 20,
-                    padding: 0,
-                    justifyContent: "center",
-                    fontSize: 9,
-                  }}
-                >
+                <span className="badge" style={{ width: 20, height: 20, padding: 0, justifyContent: "center", fontSize: 9 }}>
                   {index + 1}
                 </span>
                 <span
@@ -120,9 +125,23 @@ export function EvidenceFileInput() {
                 >
                   {file.name}
                 </span>
-                <span className="muted" style={{ fontSize: 9, whiteSpace: "nowrap" }}>
-                  {formatFileSize(file.size)}
-                </span>
+                <span className="muted" style={{ fontSize: 9, whiteSpace: "nowrap" }}>{formatFileSize(file.size)}</span>
+                <button
+                  type="button"
+                  onClick={() => removeFile(index)}
+                  aria-label={`Hapus ${file.name}`}
+                  style={{
+                    border: 0,
+                    background: "transparent",
+                    color: "var(--red)",
+                    cursor: "pointer",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 4px",
+                  }}
+                >
+                  Hapus
+                </button>
               </div>
             ))}
           </div>
@@ -137,7 +156,7 @@ export function EvidenceFileInput() {
               borderTop: "1px solid var(--line)",
             }}
           >
-            File baru akan tersimpan / terupload setelah tombol <strong>Submit Realisasi</strong> diklik.
+            Pilihan baru akan <strong>ditambahkan</strong>, bukan mengganti file sebelumnya. File baru tersimpan / terupload setelah <strong>Submit Realisasi</strong>.
           </div>
         </div>
       ) : (
