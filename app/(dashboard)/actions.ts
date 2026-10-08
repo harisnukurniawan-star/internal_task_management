@@ -3,19 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
+import { getEvidenceContentType, MAX_EVIDENCE_BYTES } from "@/lib/evidence";
 import { COMPLEXITY_OPTIONS, QUALITY_OPTIONS } from "@/lib/scoring";
 
 const ALLOWED_PRIORITIES = new Set(["low", "medium", "high", "critical"]);
 const ALLOWED_DECISIONS = new Set(["approved", "revision", "rejected"]);
 const ALLOWED_COMPLEXITIES = new Set<string>(COMPLEXITY_OPTIONS.map((item) => item.value));
 const ALLOWED_QUALITIES = new Set<string>(QUALITY_OPTIONS.map((item) => item.value));
-const ALLOWED_EVIDENCE_TYPES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
-const MAX_EVIDENCE_BYTES = 3 * 1024 * 1024;
 
 function jump(path: string, type: "ok" | "error" | "warning", message: string): never {
   redirect(`${path}?${type}=${encodeURIComponent(message)}`);
@@ -121,8 +115,9 @@ export async function submitClaim(formData: FormData) {
   if (evidence.size > MAX_EVIDENCE_BYTES) {
     myTaskJump(taskId, "error", "Evidence maksimal 3 MB.");
   }
-  if (!ALLOWED_EVIDENCE_TYPES.has(evidence.type)) {
-    myTaskJump(taskId, "error", "Evidence hanya PDF, JPG, PNG, atau WebP.");
+  const evidenceContentType = getEvidenceContentType(evidence);
+  if (!evidenceContentType) {
+    myTaskJump(taskId, "error", "Evidence hanya PDF, JPG, PNG, WebP, Word (.doc/.docx), atau Excel (.xls/.xlsx).");
   }
 
   const [employeeResult, taskResult] = await Promise.all([
@@ -168,7 +163,7 @@ export async function submitClaim(formData: FormData) {
     const safe = evidence.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
     const path = `${employee.id}/${claim.id}/${crypto.randomUUID()}-${safe}`;
     const upload = await supabase.storage.from("task-evidence").upload(path, evidence, {
-      contentType: evidence.type,
+      contentType: evidenceContentType,
       upsert: false,
     });
 
@@ -179,7 +174,7 @@ export async function submitClaim(formData: FormData) {
         claim_id: claim.id,
         file_name: evidence.name,
         file_size: evidence.size,
-        mime_type: evidence.type,
+        mime_type: evidenceContentType,
         storage_path: path,
       });
       if (meta.error) {

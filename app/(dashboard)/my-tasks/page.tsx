@@ -268,8 +268,8 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                       </div>
                       <div className="field">
                         <label>Upload evidence <span className="muted">(wajib)</span></label>
-                        <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required />
-                        <small className="muted">Wajib diisi · PDF/JPG/PNG/WebP · maks. 3 MB.</small>
+                        <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required />
+                        <small className="muted">Wajib diisi · PDF/JPG/PNG/WebP/Word/Excel · maks. 3 MB.</small>
                       </div>
                       <button className="btn" type="submit">{task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}</button>
                     </div>
