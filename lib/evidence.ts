@@ -1,4 +1,5 @@
 export const MAX_EVIDENCE_BYTES = 3 * 1024 * 1024;
+export const MAX_EVIDENCE_FILES = 3;
 
 const EVIDENCE_MIME_TYPES: Record<string, string> = {
   pdf: "application/pdf",

@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { requireProfile } from "@/lib/auth";
 import { getCurrentPeriod, getEmployeeForProfile } from "@/lib/data";
 import { complexityLabel, qualityLabel } from "@/lib/scoring";
+import { EvidenceFileInput } from "./evidence-file-input";
 import { submitClaim } from "../actions";
 
 const OPEN_TASK_STATUSES = ["assigned", "in_progress", "submitted", "revision"];
@@ -187,7 +188,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                     <div className="task-meta"><span>Submission v{claim.version}</span><span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span></div>
                     <p><strong>Realisasi:</strong> {Number(claim.completion_percent).toFixed(0)}% · {claim.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai"}</p>
                     {claim.employee_comment ? <p><strong>Keterangan:</strong> {claim.employee_comment}</p> : null}
-                    {hasEvidence ? <a className="evidence-link" href={`/evidence/${claim.id}`} target="_blank" rel="noreferrer">Buka evidence</a> : <span className="muted small">Belum ada evidence</span>}
+                    {hasEvidence ? <a className="evidence-link" href={`/evidence/${claim.id}`} target="_blank" rel="noreferrer">Buka evidence ({claim.evidence_files.length} file)</a> : <span className="muted small">Belum ada evidence</span>}
                     {evaluation ? (
                       <div className={`feedback ${evaluation.decision}`}>
                         <strong>
@@ -268,8 +269,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                       </div>
                       <div className="field">
                         <label>Upload evidence <span className="muted">(wajib)</span></label>
-                        <input name="evidence" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" required />
-                        <small className="muted">Wajib diisi · PDF/JPG/PNG/WebP/Word/Excel · maks. 3 MB.</small>
+                        <EvidenceFileInput />
                       </div>
                       <button className="btn" type="submit">{task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}</button>
                     </div>
