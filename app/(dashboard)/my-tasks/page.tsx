@@ -81,7 +81,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
   if (taskIds.length > 0) {
     const { data: claimRows } = await supabase
       .from("task_claims")
-      .select("id,task_id,version,realization_summary,completion_percent,progress_status,employee_comment,submitted_at,task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(file_name)")
+      .select("id,task_id,version,realization_summary,completion_percent,progress_status,employee_comment,submitted_at,task_evaluations(decision,quality,score,complexity_score,timeliness_score,quality_score,completion_score,feedback,evaluated_at),evidence_files(id,file_name,file_size)")
       .in("task_id", taskIds)
       .order("version", { ascending: false });
     for (const claim of claimRows ?? []) if (!latestByTask.has(claim.task_id)) latestByTask.set(claim.task_id, claim);
@@ -188,7 +188,23 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                     <div className="task-meta"><span>Submission v{claim.version}</span><span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span></div>
                     <p><strong>Realisasi:</strong> {Number(claim.completion_percent).toFixed(0)}% · {claim.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai"}</p>
                     {claim.employee_comment ? <p><strong>Keterangan:</strong> {claim.employee_comment}</p> : null}
-                    {hasEvidence ? <a className="evidence-link" href={`/evidence/${claim.id}`} target="_blank" rel="noreferrer">Buka evidence ({claim.evidence_files.length} file)</a> : <span className="muted small">Belum ada evidence</span>}
+                    {hasEvidence ? (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 5 }}>
+                        {claim.evidence_files.map((file: any, index: number) => (
+                          <a
+                            key={file.id}
+                            className="evidence-link"
+                            href={`/evidence/${claim.id}?file=${encodeURIComponent(file.id)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title={file.file_name}
+                            style={{ maxWidth: "100%" }}
+                          >
+                            Evidence {index + 1} · {file.file_name}
+                          </a>
+                        ))}
+                      </div>
+                    ) : <span className="muted small">Belum ada evidence</span>}
                     {evaluation ? (
                       <div className={`feedback ${evaluation.decision}`}>
                         <strong>
