@@ -100,14 +100,14 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
       </div>
 
       <style>{`
-        .mytasks-fit{height:calc(100vh - 44px);overflow:hidden;display:flex;flex-direction:column;gap:8px}
+        .mytasks-fit{height:calc(100vh - 44px);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
         .mytasks-head{flex:0 0 auto}
-        .mytasks-fit .topbar{margin-bottom:8px}
+        .mytasks-fit .topbar{margin-bottom:5px}
         .task-tile-grid{align-items:start;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;flex:1 1 auto;min-height:0;overflow-y:auto}
         .task-accordion{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px #2a35870d;overflow:hidden;min-width:0}
         .task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:none}
         .task-accordion[open]{grid-column:1/-1;height:100%;min-height:0;display:flex;flex-direction:column}
-        .task-tile-summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;min-height:58px;flex:0 0 auto}
+        .task-tile-summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 11px;min-height:52px;flex:0 0 auto}
         .task-tile-summary::-webkit-details-marker{display:none}
         .task-tile-summary:hover{background:var(--blue-soft)}
         .task-tile-main{display:grid;gap:4px;min-width:0}
@@ -117,37 +117,41 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
         .task-open-label{font-size:10px;font-weight:700;color:var(--navy)}
         .task-accordion[open] .task-open-label{font-size:0}
         .task-accordion[open] .task-open-label:after{content:'Tutup detail';font-size:10px}
-        .task-detail-body{border-top:1px solid var(--line);padding:9px 10px;flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
-        .task-detail-meta{margin:0 0 6px;flex:0 0 auto}
+        .task-detail-body{border-top:1px solid var(--line);padding:7px 9px;flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+        .task-detail-meta{margin:0 0 4px;flex:0 0 auto}
         .task-claim-compact{margin:0 0 7px;padding:7px 9px;flex:0 0 auto;max-height:116px;overflow:hidden}
         .task-claim-compact p{margin:4px 0;font-size:12px}
         .task-claim-compact .task-meta{margin-top:0}
         .task-claim-compact .feedback{margin-top:5px;padding:6px;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 8px}
-        .employee-submit-grid{display:grid!important;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:10px!important;flex:1 1 auto;min-height:0;margin-top:0!important}
-        .employee-context-panel,.employee-input-panel{min-width:0;min-height:0;display:flex;flex-direction:column;gap:7px}
-        .employee-context-panel .submission-box,.employee-context-panel .notice{margin:0;padding:7px 9px}
+        .employee-submit-grid{display:grid!important;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:8px!important;flex:1 1 auto;min-height:0;margin-top:0!important;overflow:hidden}
+        .employee-context-panel,.employee-input-panel{min-width:0;min-height:0;display:flex;flex-direction:column;gap:5px}
+        .employee-context-panel .submission-box,.employee-context-panel .notice{margin:0;padding:6px 8px}
         .employee-context-panel .submission-box p{margin:5px 0 0;font-size:12px;line-height:1.3}
         .employee-context-panel .notice{font-size:12px;line-height:1.25}
-        .employee-input-panel{overflow:hidden}
-        .employee-input-panel .form-row{gap:7px}
+        .employee-input-panel{overflow:visible}
+        .employee-input-panel .form-row{gap:5px}
         .employee-input-panel .field{gap:3px}
         .employee-input-panel .field label{font-size:11px}
         .employee-input-panel .field input,.employee-input-panel .field textarea,.employee-input-panel .field select{padding:6px 8px;font-size:12px;border-radius:8px}
-        .employee-input-panel textarea{min-height:48px!important;max-height:54px;resize:none}
-        .employee-input-panel input[type=file]{padding:5px 7px}
-        .progress-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+        .employee-input-panel textarea{min-height:38px!important;max-height:42px;resize:none}
+        .employee-input-panel input[type=file]{padding:4px 6px}
+        .progress-choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
         .progress-option{display:block!important;cursor:pointer;font-weight:400!important;color:inherit!important}
         .progress-option input{position:absolute;opacity:0;pointer-events:none}
-        .progress-choice{display:flex;align-items:center;gap:8px;min-height:48px;padding:7px 9px;border:1px solid #d6daea;border-radius:9px;background:#fff;transition:.15s ease}
+        .progress-choice{display:flex;align-items:center;gap:7px;min-height:42px;padding:5px 8px;border:1px solid #d6daea;border-radius:9px;background:#fff;transition:.15s ease}
         .progress-choice:hover{border-color:var(--navy);background:var(--blue-soft)}
-        .progress-icon{width:26px;height:26px;border-radius:8px;background:var(--blue-soft-2);color:var(--navy);display:grid;place-items:center;font-size:15px;font-weight:800;flex:0 0 auto}
+        .progress-icon{width:23px;height:23px;border-radius:7px;background:var(--blue-soft-2);color:var(--navy);display:grid;place-items:center;font-size:13px;font-weight:800;flex:0 0 auto}
         .progress-choice>span:last-child{display:grid;gap:1px}
         .progress-choice strong{font-size:12px;color:var(--navy2)}
         .progress-choice small{font-size:10px;color:var(--muted);font-weight:400}
         .progress-option input:checked + .progress-choice{border-color:var(--navy);background:var(--blue-soft);box-shadow:0 0 0 2px #2a35871a inset}
         .progress-option input:checked + .progress-choice .progress-icon{background:var(--navy);color:#fff}
-        .employee-input-panel .btn{padding:7px 10px}
-        @media(max-width:900px){.mytasks-fit{height:auto;overflow:visible}.task-tile-grid{overflow:visible}.task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:block}.task-accordion[open]{height:auto}.task-detail-body{overflow:visible}.employee-submit-grid{grid-template-columns:1fr}.employee-input-panel{overflow:visible}}
+        .employee-input-panel .btn{padding:7px 10px;flex:0 0 auto;display:block!important;width:100%;margin-top:1px;position:relative;z-index:2}
+        @supports selector(:has(*)){
+          .main:has(.mytasks-fit){height:100vh;overflow:hidden;padding-top:12px;padding-bottom:12px}
+          .main:has(.mytasks-fit) .mytasks-fit{height:calc(100vh - 24px)}
+        }
+        @media(max-width:900px){.main:has(.mytasks-fit){height:auto;overflow:visible;padding-top:14px;padding-bottom:14px}.mytasks-fit{height:auto;overflow:visible}.task-tile-grid{overflow:visible}.task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:block}.task-accordion[open]{height:auto}.task-detail-body{overflow:visible}.employee-submit-grid{grid-template-columns:1fr}.employee-input-panel{overflow:visible}}
         @media(max-width:700px){.progress-choice-grid{grid-template-columns:1fr}.task-accordion[open]{grid-column:auto}.task-tile-summary{align-items:flex-start}.task-tile-main strong{white-space:normal}}
       `}</style>
 
