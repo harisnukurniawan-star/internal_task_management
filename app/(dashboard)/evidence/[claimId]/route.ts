@@ -2,16 +2,23 @@ import { NextResponse } from "next/server";
 import { requireProfile } from "@/lib/auth";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ claimId: string }> },
 ) {
   const { supabase } = await requireProfile();
   const { claimId } = await params;
+  const evidenceId = new URL(request.url).searchParams.get("file");
 
-  const { data: evidence } = await supabase
+  let query = supabase
     .from("evidence_files")
-    .select("file_name,storage_path")
-    .eq("claim_id", claimId)
+    .select("id,file_name,storage_path")
+    .eq("claim_id", claimId);
+
+  if (evidenceId) {
+    query = query.eq("id", evidenceId);
+  }
+
+  const { data: evidence } = await query
     .limit(1)
     .maybeSingle();
 
