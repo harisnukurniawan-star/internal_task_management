@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
-import { getEvidenceContentType, MAX_EVIDENCE_BYTES } from "@/lib/evidence";
+import { getEvidenceContentType, MAX_EVIDENCE_BYTES, MAX_EVIDENCE_FILES } from "@/lib/evidence";
 import { COMPLEXITY_OPTIONS, QUALITY_OPTIONS } from "@/lib/scoring";
 
 const ALLOWED_PRIORITIES = new Set(["low", "medium", "high", "critical"]);
@@ -93,8 +93,9 @@ export async function submitClaim(formData: FormData) {
   const progressStatus = String(formData.get("progress_status") || "").trim();
   const employeeComment = String(formData.get("employee_comment") || "").trim() || null;
   const summary = employeeComment || `${completionPercent}% · ${progressStatus === "selesai" ? "Selesai" : "Lanjut pekan depan"}`;
-  const fileValue = formData.get("evidence");
-  const evidence = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+  const evidenceFiles = formData
+    .getAll("evidence")
+    .filter((value): value is File => value instanceof File && value.size > 0);
 
   if (!taskId || !Number.isFinite(completionPercent) || completionPercent < 0 || completionPercent > 100) {
     myTaskJump(taskId, "error", "Realisasi harus berupa angka 0-100%.");
@@ -109,15 +110,23 @@ export async function submitClaim(formData: FormData) {
     myTaskJump(taskId, "error", "Untuk Lanjut pekan depan, realisasi harus di bawah 100%.");
   }
 
-  if (!evidence) {
+  if (evidenceFiles.length === 0) {
     myTaskJump(taskId, "error", "Evidence wajib diunggah sebelum realisasi dikirim.");
   }
-  if (evidence.size > MAX_EVIDENCE_BYTES) {
-    myTaskJump(taskId, "error", "Evidence maksimal 3 MB.");
+  if (evidenceFiles.length > MAX_EVIDENCE_FILES) {
+    myTaskJump(taskId, "error", `Evidence maksimal ${MAX_EVIDENCE_FILES} file per submission.`);
   }
-  const evidenceContentType = getEvidenceContentType(evidence);
-  if (!evidenceContentType) {
-    myTaskJump(taskId, "error", "Evidence hanya PDF, JPG, PNG, WebP, Word (.doc/.docx), atau Excel (.xls/.xlsx).");
+
+  const preparedEvidence: Array<{ file: File; contentType: string }> = [];
+  for (const file of evidenceFiles) {
+    if (file.size > MAX_EVIDENCE_BYTES) {
+      myTaskJump(taskId, "error", `File "${file.name}" melebihi batas 3 MB.`);
+    }
+    const contentType = getEvidenceContentType(file);
+    if (!contentType) {
+      myTaskJump(taskId, "error", `File "${file.name}" tidak didukung. Gunakan PDF, JPG, PNG, WebP, Word, atau Excel.`);
+    }
+    preparedEvidence.push({ file, contentType });
   }
 
   const [employeeResult, taskResult] = await Promise.all([
@@ -159,28 +168,47 @@ export async function submitClaim(formData: FormData) {
   if (claimError || !claim) myTaskJump(taskId, "error", "Realisasi gagal disimpan.");
 
   let warning = "";
-  if (evidence) {
-    const safe = evidence.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
+  const uploadedPaths: string[] = [];
+  const evidenceMetadata: Array<{
+    claim_id: string;
+    file_name: string;
+    file_size: number;
+    mime_type: string;
+    storage_path: string;
+  }> = [];
+
+  for (const { file, contentType } of preparedEvidence) {
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
     const path = `${employee.id}/${claim.id}/${crypto.randomUUID()}-${safe}`;
-    const upload = await supabase.storage.from("task-evidence").upload(path, evidence, {
-      contentType: evidenceContentType,
+    const upload = await supabase.storage.from("task-evidence").upload(path, file, {
+      contentType,
       upsert: false,
     });
 
     if (upload.error) {
-      warning = "Realisasi tersimpan, tetapi evidence gagal diunggah. Completion akan bernilai 0 sampai evidence tersedia.";
-    } else {
-      const meta = await supabase.from("evidence_files").insert({
-        claim_id: claim.id,
-        file_name: evidence.name,
-        file_size: evidence.size,
-        mime_type: evidenceContentType,
-        storage_path: path,
-      });
-      if (meta.error) {
-        await supabase.storage.from("task-evidence").remove([path]);
-        warning = "Realisasi tersimpan, tetapi metadata evidence gagal disimpan. Completion akan bernilai 0.";
-      }
+      warning = `Realisasi tersimpan, tetapi evidence "${file.name}" gagal diunggah. Seluruh evidence submission ini dibatalkan agar data tetap konsisten.`;
+      break;
+    }
+
+    uploadedPaths.push(path);
+    evidenceMetadata.push({
+      claim_id: claim.id,
+      file_name: file.name,
+      file_size: file.size,
+      mime_type: contentType,
+      storage_path: path,
+    });
+  }
+
+  if (warning) {
+    if (uploadedPaths.length > 0) {
+      await supabase.storage.from("task-evidence").remove(uploadedPaths);
+    }
+  } else {
+    const meta = await supabase.from("evidence_files").insert(evidenceMetadata);
+    if (meta.error) {
+      await supabase.storage.from("task-evidence").remove(uploadedPaths);
+      warning = "Realisasi tersimpan, tetapi metadata evidence gagal disimpan. Seluruh evidence submission dibatalkan agar data tetap konsisten.";
     }
   }
 
