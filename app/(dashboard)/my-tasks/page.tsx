@@ -6,6 +6,12 @@ import { getCurrentPeriod, getEmployeeForProfile } from "@/lib/data";
 import { complexityLabel, qualityLabel } from "@/lib/scoring";
 import { submitClaim } from "../actions";
 
+const OPEN_TASK_STATUSES = ["assigned", "in_progress", "submitted", "revision"];
+
+function periodFor(task: any) {
+  return Array.isArray(task.weekly_periods) ? task.weekly_periods[0] : task.weekly_periods;
+}
+
 function kpiFor(task: any) {
   return Array.isArray(task.employee_kpis) ? task.employee_kpis[0] : task.employee_kpis;
 }
@@ -28,14 +34,20 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
   ]);
   if (!employee) return <p>Employee profile belum ditautkan.</p>;
 
-  const taskSelect = "id,period_id,title,description,status,priority,complexity,due_at,support_kpi_id,support_tupoksi_id,employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)";
+  const taskSelect = "id,period_id,title,description,status,priority,complexity,due_at,support_kpi_id,support_tupoksi_id,weekly_periods!inner(label,week_start),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)";
 
+  const periodBoundary = period?.week_start ?? new Date().toISOString().slice(0, 10);
   let taskQuery = supabase
     .from("tasks")
     .select(taskSelect)
-    .eq("assigned_to", employee.id);
-  if (period) taskQuery = taskQuery.eq("period_id", period.id);
-  const { data: taskRows } = await taskQuery.order("created_at", { ascending: false });
+    .eq("assigned_to", employee.id)
+    .lte("weekly_periods.week_start", periodBoundary);
+  // Keep current-period history and include only open tasks from earlier periods.
+  taskQuery = period
+    ? taskQuery.or(`period_id.eq.${period.id},status.in.(${OPEN_TASK_STATUSES.join(",")})`)
+    : taskQuery.in("status", OPEN_TASK_STATUSES);
+  const { data: taskRows, error: taskError } = await taskQuery.order("created_at", { ascending: false });
+  if (taskError) throw new Error("Daftar task gagal dimuat. Silakan coba lagi.");
   const tasks = taskRows ?? [];
 
   if (selectedTaskId && !tasks.some((task) => task.id === selectedTaskId)) {
@@ -48,6 +60,20 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
     if (selectedTask) tasks.unshift(selectedTask);
   }
 
+  const carryOverIds = new Set(
+    tasks
+      .filter((task) => OPEN_TASK_STATUSES.includes(task.status) && periodFor(task)?.week_start < periodBoundary)
+      .map((task) => task.id),
+  );
+  tasks.sort((a, b) => {
+    const aCarry = carryOverIds.has(a.id);
+    const bCarry = carryOverIds.has(b.id);
+    if (aCarry !== bCarry) return aCarry ? -1 : 1;
+    if (!aCarry) return 0;
+    const aDue = a.due_at ? new Date(a.due_at).getTime() : Number.MAX_SAFE_INTEGER;
+    const bDue = b.due_at ? new Date(b.due_at).getTime() : Number.MAX_SAFE_INTEGER;
+    return aDue - bDue;
+  });
   const taskIds = tasks.map((task) => task.id);
 
   const latestByTask = new Map<string, any>();
@@ -63,15 +89,20 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
   return (
     <div className="mytasks-fit">
       <div className="mytasks-head">
-        <PageHeader title="My Tasks" subtitle={period?.label || "Task periode aktif"} />
+        <PageHeader title="My Tasks" subtitle={period ? `${period.label} · termasuk carry over dari periode sebelumnya` : "Task terbuka, termasuk carry over dari periode sebelumnya"} />
         <FlashMessage params={params} />
+        {carryOverIds.size > 0 ? (
+          <div className="notice warning">
+            {carryOverIds.size} task carry over belum selesai / belum divalidasi. Periode dan deadline asal tetap dipertahankan.
+          </div>
+        ) : null}
       </div>
 
       <style>{`
         .mytasks-fit{height:calc(100vh - 44px);overflow:hidden;display:flex;flex-direction:column;gap:8px}
         .mytasks-head{flex:0 0 auto}
         .mytasks-fit .topbar{margin-bottom:8px}
-        .task-tile-grid{align-items:start;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;flex:1 1 auto;min-height:0;overflow:hidden}
+        .task-tile-grid{align-items:start;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;flex:1 1 auto;min-height:0;overflow-y:auto}
         .task-accordion{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px #2a35870d;overflow:hidden;min-width:0}
         .task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:none}
         .task-accordion[open]{grid-column:1/-1;height:100%;min-height:0;display:flex;flex-direction:column}
@@ -85,7 +116,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
         .task-open-label{font-size:10px;font-weight:700;color:var(--navy)}
         .task-accordion[open] .task-open-label{font-size:0}
         .task-accordion[open] .task-open-label:after{content:'Tutup detail';font-size:10px}
-        .task-detail-body{border-top:1px solid var(--line);padding:9px 10px;flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+        .task-detail-body{border-top:1px solid var(--line);padding:9px 10px;flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
         .task-detail-meta{margin:0 0 6px;flex:0 0 auto}
         .task-claim-compact{margin:0 0 7px;padding:7px 9px;flex:0 0 auto;max-height:116px;overflow:hidden}
         .task-claim-compact p{margin:4px 0;font-size:12px}
@@ -121,6 +152,8 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
 
       <div className="task-tile-grid">
         {tasks.map((task) => {
+          const isCarryOver = carryOverIds.has(task.id);
+          const taskPeriod = periodFor(task);
           const claim = latestByTask.get(task.id);
           const evaluation = claim?.task_evaluations;
           const canSubmit = ["assigned", "in_progress", "revision"].includes(task.status);
@@ -133,6 +166,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
               <summary className="task-tile-summary">
                 <div className="task-tile-main">
                   <strong>{task.title}</strong>
+                  {isCarryOver ? <span className="task-tile-due" style={{ color: "var(--amber)", fontWeight: 700 }}>Carry over · {taskPeriod?.label || "Periode sebelumnya"}</span> : null}
                   <span className="task-tile-due">Due: {task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</span>
                 </div>
                 <div className="task-tile-side">
@@ -252,7 +286,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
         })}
       </div>
 
-      {tasks.length === 0 ? <div className="card empty">Belum ada task untuk minggu ini.</div> : null}
+      {tasks.length === 0 ? <div className="card empty">Belum ada task minggu ini maupun carry over.</div> : null}
     </div>
   );
 }
