@@ -43,10 +43,9 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
     .select(taskSelect)
     .eq("assigned_to", employee.id)
     .lte("weekly_periods.week_start", periodBoundary);
-  // Keep current-period history and include only open tasks from earlier periods.
-  taskQuery = period
-    ? taskQuery.or(`period_id.eq.${period.id},status.in.(${OPEN_TASK_STATUSES.join(",")})`)
-    : taskQuery.in("status", OPEN_TASK_STATUSES);
+  // My Tasks is an active-work queue: show only open workflow statuses
+  // for both the current period and carry-over periods.
+  taskQuery = taskQuery.in("status", OPEN_TASK_STATUSES);
   const { data: taskRows, error: taskError } = await taskQuery.order("created_at", { ascending: false });
   if (taskError) throw new Error("Daftar task gagal dimuat. Silakan coba lagi.");
   const tasks = taskRows ?? [];
@@ -57,6 +56,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
       .select(taskSelect)
       .eq("id", selectedTaskId)
       .eq("assigned_to", employee.id)
+      .in("status", OPEN_TASK_STATUSES)
       .maybeSingle();
     if (selectedTask) tasks.unshift(selectedTask);
   }
