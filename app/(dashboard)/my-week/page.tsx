@@ -37,7 +37,7 @@ export default async function MyWeekPage() {
 
   return (
     <>
-      <PageHeader title="My Week" subtitle={period ? `${period.label} · hanya tugas minggu berjalan` : "Tidak ada periode aktif"} />
+      <PageHeader title="Weekly Assignment" subtitle={period ? `${period.label} · hanya tugas minggu berjalan` : "Tidak ada periode aktif"} />
 
       <style>{`
         .myweek-task-link{display:inline-flex;align-items:center;gap:7px;font-weight:700;color:var(--navy2)}
