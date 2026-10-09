@@ -160,52 +160,59 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
               )}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.08fr) minmax(380px,.92fr)", gap: 14, flex: "1 1 auto", minHeight: 0, paddingTop: 10 }}>
-              <div style={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 8, overflow: "hidden" }}>
-                <div className="notice neutral" style={{ margin: 0, padding: "8px 10px" }}>
-                  <strong>Support KPI</strong><br />
-                  {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
-                </div>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.08fr) minmax(380px,.92fr)", gap: 10, flex: "1 1 auto", minHeight: 0, paddingTop: 8 }}>
+              <div style={{ minWidth: 0, minHeight: 0, display: "grid", gridTemplateRows: "auto auto minmax(84px,1fr)", gap: 7, overflow: "hidden" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, minWidth: 0 }}>
+                  <div className="notice neutral" style={{ margin: 0, padding: "7px 9px", minWidth: 0 }}>
+                    <strong>Support KPI</strong><br />
+                    {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small clamp">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
+                  </div>
 
-                <div className="notice neutral" style={{ margin: 0, padding: "8px 10px" }}>
-                  <strong>Support Tupoksi</strong><br />
-                  {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
-                </div>
-
-                <div className="submission-box" style={{ marginTop: 0, padding: 10 }}>
-                  <strong>Realisasi Employee</strong>
-                  <p style={{ margin: "6px 0 0" }}>{claim.realization_summary}</p>
-                </div>
-
-                <div className="notice neutral" style={{ margin: 0, padding: "9px 10px" }}>
-                  <strong>Klaim Employee</strong>
-                  <div className="task-meta" style={{ marginTop: 6 }}>
-                    <span><strong>Realisasi:</strong> {Number(claim.completion_percent || 0).toFixed(0)}%</span>
-                    <span><strong>Status:</strong> {progressLabel}</span>
-                    <span><strong>Keterangan:</strong> {claim.employee_comment || "-"}</span>
+                  <div className="notice neutral" style={{ margin: 0, padding: "7px 9px", minWidth: 0 }}>
+                    <strong>Support Tupoksi</strong><br />
+                    {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small clamp">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
                   </div>
                 </div>
 
-                <div style={{ flex: "1 1 auto", minHeight: 0, border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "white", display: "flex", flexDirection: "column" }}>
-                  <div style={{ background: "var(--blue-soft)", padding: "8px 10px", borderBottom: "1px solid var(--line)", flex: "0 0 auto" }}>
-                    <strong>Evidence</strong>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,.9fr) minmax(0,1.1fr)", gap: 7, minWidth: 0 }}>
+                  <div className="submission-box" style={{ marginTop: 0, padding: "8px 9px", minWidth: 0 }}>
+                    <strong>Realisasi Employee</strong>
+                    <p className="clamp" style={{ margin: "4px 0 0" }}>{claim.realization_summary}</p>
                   </div>
-                  <div style={{ flex: "1 1 auto", minHeight: 0, background: "white", overflowY: "auto" }}>
-                    {evidenceRows.length > 0 ? evidenceRows.map((file: any, index: number) => (
-                      <div key={`${file.storage_path}-${index}`} style={{ minHeight: 46, padding: "7px 10px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "white", borderBottom: index < evidenceRows.length - 1 ? "1px solid var(--line)" : "0" }}>
-                        <div style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 8 }}>
-                          <span className="badge" style={{ flex: "0 0 auto" }}>#{index + 1}</span>
-                          <div className="small" style={{ minWidth: 0 }}>
-                            <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)" }}>{file.file_name}</div>
-                            <div className="muted" style={{ marginTop: 2 }}>{formatBytes(file.file_size)} · Completion 100</div>
+
+                  <div className="notice neutral" style={{ margin: 0, padding: "8px 9px", minWidth: 0 }}>
+                    <strong>Klaim Employee</strong>
+                    <div className="task-meta" style={{ marginTop: 4, gap: 8 }}>
+                      <span><strong>Realisasi:</strong> {Number(claim.completion_percent || 0).toFixed(0)}%</span>
+                      <span><strong>Status:</strong> {progressLabel}</span>
+                      <span title={claim.employee_comment || "-"} className="clamp"><strong>Keterangan:</strong> {claim.employee_comment || "-"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ minHeight: 84, border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "white", display: "flex", flexDirection: "column" }}>
+                  <div style={{ background: "var(--blue-soft)", padding: "6px 9px", borderBottom: "1px solid var(--line)", flex: "0 0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <strong>Evidence ({evidenceRows.length})</strong>
+                    <span className="muted small">File upload staff</span>
+                  </div>
+                  <div style={{ flex: "1 1 auto", minHeight: 0, background: "white", overflowX: "auto", overflowY: "hidden", padding: 7 }}>
+                    {evidenceRows.length > 0 ? (
+                      <div style={{ display: "flex", gap: 7, minWidth: "max-content", height: "100%" }}>
+                        {evidenceRows.map((file: any, index: number) => (
+                          <div key={`${file.storage_path}-${index}`} style={{ width: 210, minHeight: 58, padding: "7px 8px", border: "1px solid var(--line)", borderRadius: 8, background: "#fff", display: "grid", gridTemplateColumns: "28px minmax(0,1fr)", gap: 7, alignItems: "center" }}>
+                            <span className="badge" style={{ width: 26, height: 26, padding: 0, justifyContent: "center", flex: "0 0 auto" }}>{index + 1}</span>
+                            <div style={{ minWidth: 0 }}>
+                              <div className="small" title={file.file_name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)", fontWeight: 700 }}>{file.file_name}</div>
+                              <div className="muted" style={{ marginTop: 2, fontSize: 10 }}>{formatBytes(file.file_size)}</div>
+                              <div style={{ display: "flex", gap: 5, marginTop: 5 }}>
+                                {file.viewUrl ? <a className="btn secondary" style={{ padding: "4px 7px", fontSize: 10 }} href={file.viewUrl} target="_blank" rel="noreferrer">View</a> : null}
+                                {file.downloadUrl ? <a className="btn" style={{ padding: "4px 7px", fontSize: 10 }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flex: "0 0 auto" }}>
-                          {file.viewUrl ? <a className="btn secondary" style={{ padding: "6px 9px" }} href={file.viewUrl} target="_blank" rel="noreferrer">👁 View</a> : null}
-                          {file.downloadUrl ? <a className="btn" style={{ padding: "6px 9px" }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
-                        </div>
+                        ))}
                       </div>
-                    )) : <div className="muted small" style={{ padding: 10 }}>Belum ada evidence · Completion 0</div>}
+                    ) : <div className="muted small" style={{ padding: 4 }}>Belum ada evidence · Completion 0</div>}
                   </div>
                 </div>
               </div>
@@ -247,7 +254,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
 
                   <div className="field" style={{ flex: "1 1 auto", minHeight: 0, display: "flex", flexDirection: "column" }}>
                     <label>Feedback</label>
-                    <textarea name="feedback" maxLength={1600} defaultValue={evaluation?.feedback || ""} style={{ flex: "1 1 auto", minHeight: 100, resize: "none" }} />
+                    <textarea name="feedback" maxLength={1600} defaultValue={evaluation?.feedback || ""} style={{ flex: "1 1 auto", minHeight: 82, resize: "none" }} />
                   </div>
 
                   <small className="muted" style={{ flex: "0 0 auto" }}>
