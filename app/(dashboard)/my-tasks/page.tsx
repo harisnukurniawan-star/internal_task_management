@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FlashMessage, type FlashParams } from "@/components/flash-message";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
@@ -8,6 +9,7 @@ import { EvidenceFileInput } from "./evidence-file-input";
 import { submitClaim } from "../actions";
 
 const OPEN_TASK_STATUSES = ["assigned", "in_progress", "submitted", "revision"];
+const CLOSED_TASK_STATUSES = ["approved", "rejected"];
 
 function periodFor(task: any) {
   return Array.isArray(task.weekly_periods) ? task.weekly_periods[0] : task.weekly_periods;
@@ -21,13 +23,176 @@ function tupoksiFor(task: any) {
   return Array.isArray(task.employee_tupoksi) ? task.employee_tupoksi[0] : task.employee_tupoksi;
 }
 
-type MyTasksSearchParams = FlashParams & { task?: string };
+type MyTasksSearchParams = FlashParams & { task?: string; tab?: string; page?: string };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+
+async function CompletedTaskHistory({ params }: { params: MyTasksSearchParams }) {
+  const { supabase, profile } = await requireProfile();
+  const employee = await getEmployeeForProfile(profile.id, supabase);
+  if (!employee) return <p>Employee profile belum ditautkan.</p>;
+
+  const completedSelect = "id,period_id,title,status,priority,complexity,due_at,created_at,support_kpi_id,support_tupoksi_id,weekly_periods!inner(label,week_start),employee_kpis!tasks_support_kpi_employee_fkey(kpi_code,kpi_description,achievement),employee_tupoksi!tasks_support_tupoksi_employee_fkey(tupoksi_code,tupoksi_description)";
+  const { data: completedRows, error: completedError } = await supabase
+    .from("tasks")
+    .select(completedSelect)
+    .eq("assigned_to", employee.id)
+    .in("status", CLOSED_TASK_STATUSES)
+    .order("created_at", { ascending: false });
+  if (completedError) throw new Error("Riwayat task gagal dimuat. Silakan coba lagi.");
+
+  const completedTasks = completedRows ?? [];
+  const taskIds = completedTasks.map((task) => task.id);
+  const latestByTask = new Map<string, any>();
+
+  if (taskIds.length > 0) {
+    const { data: claimRows } = await supabase
+      .from("task_claims")
+      .select("id,task_id,version,submitted_at,task_evaluations(decision,score,evaluated_at)")
+      .in("task_id", taskIds)
+      .order("version", { ascending: false });
+    for (const claim of claimRows ?? []) {
+      if (!latestByTask.has(claim.task_id)) latestByTask.set(claim.task_id, claim);
+    }
+  }
+
+  const pageSize = 6;
+  const requestedPage = Number.parseInt(params.page || "1", 10);
+  const totalPages = Math.max(1, Math.ceil(completedTasks.length / pageSize));
+  const currentPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), totalPages) : 1;
+  const visibleTasks = completedTasks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div className="mytasks-completed-fit">
+      <style>{`
+        .mytasks-completed-fit{height:calc(100vh - 44px);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:7px}
+        .mytasks-completed-fit .topbar{margin-bottom:2px;flex:0 0 auto}
+        .mytasks-completed-fit .page-tabs{margin:0;flex:0 0 auto}
+        .staff-completed-panel{display:flex;flex-direction:column;gap:7px;min-height:0;flex:1 1 auto}
+        .staff-completed-table-wrap{overflow:visible!important;min-height:0;flex:1 1 auto;border-radius:11px}
+        .staff-completed-table{table-layout:fixed;width:100%}
+        .staff-completed-table th,.staff-completed-table td{padding:7px 8px;font-size:11px;line-height:1.2;vertical-align:middle;overflow:hidden}
+        .staff-completed-table th{height:32px}
+        .staff-completed-table tbody tr{height:52px}
+        .staff-completed-table td{max-height:52px}
+        .staff-completed-clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:break-word}
+        .staff-completed-clamp.one{-webkit-line-clamp:1}
+        .staff-completed-table .badge{font-size:9px;padding:3px 6px;white-space:nowrap}
+        .staff-completed-pagination{min-height:38px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex:0 0 auto;position:relative;z-index:80;background:#fff;padding:2px 0 1px}
+        .staff-completed-pagination .btn{padding:6px 9px;font-size:11px;pointer-events:auto}
+        @supports selector(:has(*)){
+          .main:has(.mytasks-completed-fit){height:100vh;overflow:hidden;padding-top:22px;padding-bottom:22px}
+          .main:has(.mytasks-completed-fit) .mytasks-completed-fit{height:calc(100vh - 44px)}
+        }
+        @media(max-width:1100px){
+          .staff-completed-table th,.staff-completed-table td{padding:6px;font-size:10px}
+          .staff-completed-table tbody tr{height:48px}
+          .staff-completed-table td{max-height:48px}
+        }
+        @media(max-width:900px){
+          .main:has(.mytasks-completed-fit){height:auto;overflow:visible;padding-top:14px;padding-bottom:14px}
+          .mytasks-completed-fit,.main:has(.mytasks-completed-fit) .mytasks-completed-fit{height:auto;overflow:visible}
+          .staff-completed-table-wrap{overflow:auto!important}
+        }
+      `}</style>
+
+      <PageHeader title="My Tasks" subtitle="Riwayat task seluruh periode yang sudah selesai divalidasi atau ditutup." />
+      <FlashMessage params={params} />
+
+      <nav className="page-tabs" aria-label="My task sections">
+        <Link prefetch className="page-tab" href="/my-tasks?tab=todo">Task to Do</Link>
+        <Link prefetch className="page-tab active" href="/my-tasks?tab=completed&page=1">Task Completed</Link>
+      </nav>
+
+      <div className="staff-completed-panel">
+        <section className="table-wrap staff-completed-table-wrap">
+          <table className="staff-completed-table">
+            <colgroup>
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "15%" }} />
+              <col style={{ width: "9%" }} />
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "10%" }} />
+              <col style={{ width: "7%" }} />
+              <col style={{ width: "5%" }} />
+              <col style={{ width: "5%" }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Periode</th>
+                <th>Support KPI</th>
+                <th>Support Tupoksi</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Kompleksitas</th>
+                <th>Due</th>
+                <th>Score</th>
+                <th>Evaluated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleTasks.map((task) => {
+                const kpi = kpiFor(task);
+                const tupoksi = tupoksiFor(task);
+                const claim = latestByTask.get(task.id);
+                const rawEvaluation = claim?.task_evaluations;
+                const evaluation = Array.isArray(rawEvaluation) ? rawEvaluation[0] : rawEvaluation;
+                return (
+                  <tr key={task.id}>
+                    <td title={task.title}><div className="staff-completed-clamp"><strong>{task.title}</strong></div></td>
+                    <td title={periodFor(task)?.label || "-"}><div className="staff-completed-clamp one">{periodFor(task)?.label || "-"}</div></td>
+                    <td title={kpi ? `${kpi.kpi_code} · ${kpi.kpi_description}` : "-"}>
+                      {kpi ? <div className="staff-completed-clamp"><strong>{kpi.kpi_code}</strong> · {kpi.kpi_description}</div> : <span className="muted">-</span>}
+                    </td>
+                    <td title={tupoksi ? `${tupoksi.tupoksi_code} · ${tupoksi.tupoksi_description}` : "-"}>
+                      {tupoksi ? <div className="staff-completed-clamp"><strong>{tupoksi.tupoksi_code}</strong> · {tupoksi.tupoksi_description}</div> : <span className="muted">-</span>}
+                    </td>
+                    <td><StatusBadge status={task.status} /></td>
+                    <td>{task.priority}</td>
+                    <td><div className="staff-completed-clamp">{complexityLabel(task.complexity)}</div></td>
+                    <td>{task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</td>
+                    <td>{task.status === "approved" && evaluation?.score != null ? <strong>{Number(evaluation.score).toFixed(2)}</strong> : <span className="muted">-</span>}</td>
+                    <td>{evaluation?.evaluated_at ? new Date(evaluation.evaluated_at).toLocaleDateString("id-ID") : "-"}</td>
+                  </tr>
+                );
+              })}
+              {completedTasks.length === 0 ? (
+                <tr><td colSpan={10} className="empty">Belum ada riwayat task completed.</td></tr>
+              ) : null}
+            </tbody>
+          </table>
+        </section>
+
+        {completedTasks.length > 0 ? (
+          <div className="staff-completed-pagination">
+            <span className="muted small">
+              Menampilkan {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, completedTasks.length)} dari {completedTasks.length} task
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              {currentPage > 1 ? (
+                <Link prefetch className="btn secondary" href={`/my-tasks?tab=completed&page=${currentPage - 1}`}>← Sebelumnya</Link>
+              ) : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
+              <span className="badge">{currentPage} / {totalPages}</span>
+              {currentPage < totalPages ? (
+                <Link prefetch className="btn secondary" href={`/my-tasks?tab=completed&page=${currentPage + 1}`}>Berikutnya →</Link>
+              ) : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default async function MyTasksPage({ searchParams }: { searchParams: Promise<MyTasksSearchParams> }) {
   const params = await searchParams;
   const selectedTaskId = typeof params.task === "string" && UUID_PATTERN.test(params.task) ? params.task : null;
+  const activeTab = !selectedTaskId && params.tab === "completed" ? "completed" : "todo";
+  if (activeTab === "completed") return <CompletedTaskHistory params={params} />;
   const { supabase, profile } = await requireProfile();
   const [employee, period] = await Promise.all([
     getEmployeeForProfile(profile.id, supabase),
@@ -92,6 +257,10 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
       <div className="mytasks-head">
         <PageHeader title="My Tasks" subtitle={period ? `${period.label} · termasuk carry over dari periode sebelumnya` : "Task terbuka, termasuk carry over dari periode sebelumnya"} />
         <FlashMessage params={params} />
+        <nav className="page-tabs" aria-label="My task sections">
+          <Link prefetch className="page-tab active" href="/my-tasks?tab=todo">Task to Do</Link>
+          <Link prefetch className="page-tab" href="/my-tasks?tab=completed&page=1">Task Completed</Link>
+        </nav>
         {carryOverIds.size > 0 ? (
           <div className="notice warning">
             {carryOverIds.size} task carry over belum selesai / belum divalidasi. Periode dan deadline asal tetap dipertahankan.
@@ -103,6 +272,7 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
         .mytasks-fit{height:calc(100vh - 44px);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
         .mytasks-head{flex:0 0 auto}
         .mytasks-fit .topbar{margin-bottom:5px}
+        .mytasks-fit .page-tabs{margin:0;flex:0 0 auto}
         .task-tile-grid{align-items:start;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;flex:1 1 auto;min-height:0;overflow-y:auto}
         .task-accordion{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px #2a35870d;overflow:hidden;min-width:0}
         .task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:none}
