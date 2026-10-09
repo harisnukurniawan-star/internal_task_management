@@ -161,26 +161,32 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.08fr) minmax(380px,.92fr)", gap: 10, flex: "1 1 auto", minHeight: 0, paddingTop: 8 }}>
-              <div style={{ minWidth: 0, minHeight: 0, display: "grid", gridTemplateRows: "auto auto minmax(84px,1fr)", gap: 7, overflow: "hidden" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, minWidth: 0 }}>
-                  <div className="notice neutral" style={{ margin: 0, padding: "7px 9px", minWidth: 0 }}>
+              <div style={{ minWidth: 0, minHeight: 0, display: "grid", gridTemplateRows: "auto minmax(84px,1fr)", gap: 7, overflow: "hidden" }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2,minmax(0,1fr))",
+                    gridTemplateRows: "repeat(2,minmax(76px,1fr))",
+                    gap: 7,
+                    minWidth: 0,
+                  }}
+                >
+                  <div className="notice neutral" style={{ margin: 0, padding: "8px 10px", minWidth: 0, height: "100%", overflow: "hidden" }}>
                     <strong>Support KPI</strong><br />
                     {kpi ? <><span>{kpi.kpi_code}</span><br /><span className="small clamp">{kpi.kpi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
                   </div>
 
-                  <div className="notice neutral" style={{ margin: 0, padding: "7px 9px", minWidth: 0 }}>
+                  <div className="notice neutral" style={{ margin: 0, padding: "8px 10px", minWidth: 0, height: "100%", overflow: "hidden" }}>
                     <strong>Support Tupoksi</strong><br />
                     {tupoksi ? <><span>{tupoksi.tupoksi_code}</span><br /><span className="small clamp">{tupoksi.tupoksi_description}</span></> : <span className="muted">Belum ditetapkan.</span>}
                   </div>
-                </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0,.9fr) minmax(0,1.1fr)", gap: 7, minWidth: 0 }}>
-                  <div className="submission-box" style={{ marginTop: 0, padding: "8px 9px", minWidth: 0 }}>
+                  <div className="notice neutral" style={{ margin: 0, padding: "8px 10px", minWidth: 0, height: "100%", overflow: "hidden" }}>
                     <strong>Realisasi Employee</strong>
                     <p className="clamp" style={{ margin: "4px 0 0" }}>{claim.realization_summary}</p>
                   </div>
 
-                  <div className="notice neutral" style={{ margin: 0, padding: "8px 9px", minWidth: 0 }}>
+                  <div className="notice neutral" style={{ margin: 0, padding: "8px 10px", minWidth: 0, height: "100%", overflow: "hidden" }}>
                     <strong>Klaim Employee</strong>
                     <div className="task-meta" style={{ marginTop: 4, gap: 8 }}>
                       <span><strong>Realisasi:</strong> {Number(claim.completion_percent || 0).toFixed(0)}%</span>
