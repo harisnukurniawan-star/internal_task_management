@@ -80,7 +80,7 @@ export function AppShell({
             </>
           ) : (
             <>
-              <Link href="/my-week">My Week</Link>
+              <Link href="/my-week">Weekly Assignment</Link>
               <Link href="/my-tasks" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                 <span>My Tasks</span>
                 <NotificationBadge count={assignmentCount} />
