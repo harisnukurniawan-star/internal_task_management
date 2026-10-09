@@ -166,7 +166,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(2,minmax(0,1fr))",
-                    gridTemplateRows: "repeat(2,minmax(76px,1fr))",
+                    gridTemplateRows: "repeat(2,70px)",
                     gap: 7,
                     minWidth: 0,
                   }}
@@ -196,23 +196,23 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                   </div>
                 </div>
 
-                <div style={{ minHeight: 84, border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "white", display: "flex", flexDirection: "column" }}>
+                <div style={{ minHeight: 96, border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden", background: "white", display: "flex", flexDirection: "column" }}>
                   <div style={{ background: "var(--blue-soft)", padding: "6px 9px", borderBottom: "1px solid var(--line)", flex: "0 0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <strong>Evidence ({evidenceRows.length})</strong>
                     <span className="muted small">File upload staff</span>
                   </div>
-                  <div style={{ flex: "1 1 auto", minHeight: 0, background: "white", overflowX: "auto", overflowY: "hidden", padding: 7 }}>
+                  <div style={{ flex: "1 1 auto", minHeight: 0, background: "white", overflowX: "auto", overflowY: "hidden", padding: "5px 7px 7px" }}>
                     {evidenceRows.length > 0 ? (
                       <div style={{ display: "flex", gap: 7, minWidth: "max-content", height: "100%" }}>
                         {evidenceRows.map((file: any, index: number) => (
-                          <div key={`${file.storage_path}-${index}`} style={{ width: 210, minHeight: 58, padding: "7px 8px", border: "1px solid var(--line)", borderRadius: 8, background: "#fff", display: "grid", gridTemplateColumns: "28px minmax(0,1fr)", gap: 7, alignItems: "center" }}>
-                            <span className="badge" style={{ width: 26, height: 26, padding: 0, justifyContent: "center", flex: "0 0 auto" }}>{index + 1}</span>
+                          <div key={`${file.storage_path}-${index}`} style={{ width: 210, minHeight: 52, padding: "5px 8px", border: "1px solid var(--line)", borderRadius: 8, background: "#fff", display: "grid", gridTemplateColumns: "26px minmax(0,1fr)", gap: 7, alignItems: "center" }}>
+                            <span className="badge" style={{ width: 24, height: 24, padding: 0, justifyContent: "center", flex: "0 0 auto" }}>{index + 1}</span>
                             <div style={{ minWidth: 0 }}>
                               <div className="small" title={file.file_name} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--text)", fontWeight: 700 }}>{file.file_name}</div>
                               <div className="muted" style={{ marginTop: 2, fontSize: 10 }}>{formatBytes(file.file_size)}</div>
-                              <div style={{ display: "flex", gap: 5, marginTop: 5 }}>
-                                {file.viewUrl ? <a className="btn secondary" style={{ padding: "4px 7px", fontSize: 10 }} href={file.viewUrl} target="_blank" rel="noreferrer">View</a> : null}
-                                {file.downloadUrl ? <a className="btn" style={{ padding: "4px 7px", fontSize: 10 }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
+                              <div style={{ display: "flex", gap: 5, marginTop: 3 }}>
+                                {file.viewUrl ? <a className="btn secondary" style={{ padding: "3px 7px", fontSize: 10, lineHeight: 1.1 }} href={file.viewUrl} target="_blank" rel="noreferrer">View</a> : null}
+                                {file.downloadUrl ? <a className="btn" style={{ padding: "3px 7px", fontSize: 10, lineHeight: 1.1 }} href={file.downloadUrl} target="_blank" rel="noreferrer">Download</a> : null}
                               </div>
                             </div>
                           </div>
