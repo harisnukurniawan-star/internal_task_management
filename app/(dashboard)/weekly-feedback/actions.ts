@@ -18,14 +18,16 @@ export async function calibrateWeeklyFeedback(formData: FormData) {
   const id = String(formData.get("id") || "");
   if (!uuidPattern.test(id)) redirect("/weekly-feedback?tab=calibration&error=invalid");
   const status = String(formData.get("status") || "");
+  const week = String(formData.get("week_start") || "");
+  const weekParam = /^\d{4}-\d{2}-\d{2}$/.test(week) ? "&week=" + week : "";
   if (status !== "calibrated" && status !== "insufficient") {
-    redirect("/weekly-feedback?tab=calibration&entry=" + id + "&error=invalid");
+    redirect("/weekly-feedback?tab=calibration&entry=" + id + " + weekParam + "&error=invalid");
   }
   const performance = toScore(formData.get("performance"));
   const contribution = toScore(formData.get("contribution"));
   const collaboration = toScore(formData.get("collaboration"));
   if (status === "calibrated" && [performance, contribution, collaboration].some((v) => v === null)) {
-    redirect("/weekly-feedback?tab=calibration&entry=" + id + "&error=score");
+    redirect("/weekly-feedback?tab=calibration&entry=" + id + " + weekParam + "&error=score");
   }
   const note = String(formData.get("note") || "").trim().slice(0, 500);
   const { error } = await supabase.from("weekly_feedback").update({
@@ -37,7 +39,7 @@ export async function calibrateWeeklyFeedback(formData: FormData) {
     calibrated_by: profile.id,
     calibrated_at: new Date().toISOString(),
   }).eq("id", id);
-  if (error) redirect("/weekly-feedback?tab=calibration&entry=" + id + "&error=save");
+  if (error) redirect("/weekly-feedback?tab=calibration&entry=" + id + " + weekParam + "&error=save");
   revalidatePath("/weekly-feedback");
-  redirect("/weekly-feedback?tab=calibration&entry=" + id + "&saved=1");
+  redirect("/weekly-feedback?tab=calibration&entry=" + id + " + weekParam + "&saved=1");
 }
