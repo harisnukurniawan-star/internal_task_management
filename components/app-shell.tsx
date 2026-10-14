@@ -77,6 +77,7 @@ export function AppShell({
                 <span>Validation & Evaluation</span>
                 <NotificationBadge count={validationCount} />
               </Link>
+              <Link href="/weekly-feedback">Weekly Feedback</Link>
             </>
           ) : (
             <>
