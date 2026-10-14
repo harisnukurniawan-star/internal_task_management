@@ -70,6 +70,24 @@ export default async function WeeklyFeedbackPage({ searchParams }: { searchParam
   const calibratedIndex = calibratedRows.length ? calibratedRows.reduce((sum, row) => sum + (Number(row.calibration_performance)*.5 + Number(row.calibration_contribution)*.3 + Number(row.calibration_collaboration)*.2), 0) / calibratedRows.length : null;
   const difference = matchedSelf == null || calibratedIndex == null ? null : matchedSelf - calibratedIndex;
   const selected = weekRows.find((r) => r.id === params.entry) ?? weekRows.find((r) => r.calibration_status === "pending") ?? weekRows[0];
+  // Read-only task context for a supervisor's feedback calibration (never mutates scoring).
+  let evidenceSummary: { assigned: number; approved: number; submitted: number; revision: number } | null = null;
+  if (selected && activeWeek) {
+    const { data: period } = await supabase.from("weekly_periods").select("id")
+      .eq("week_start", activeWeek).maybeSingle();
+    if (period) {
+      const { data: taskRows } = await supabase.from("tasks").select("id,status")
+        .eq("period_id", period.id).eq("assigned_to", selected.employee_id);
+      if (taskRows) {
+        evidenceSummary = {
+          assigned: taskRows.length,
+          approved: taskRows.filter((t) => t.status === "approved").length,
+          submitted: taskRows.filter((t) => t.status === "submitted").length,
+          revision: taskRows.filter((t) => t.status === "revision").length,
+        };
+      }
+    }
+  }
   const chart = DIMENSIONS.map((d) => ({
     label:d.name, self:avg(calibratedRows,d.self), calibrated:avg(calibratedRows,d.verified)
   }));
@@ -138,7 +156,9 @@ export default async function WeeklyFeedbackPage({ searchParams }: { searchParam
               {!selected ? <p className="fb-empty">Belum ada feedback untuk ditinjau.</p> : (
                 <form className="fb-editor" action={calibrateWeeklyFeedback}>
                   <input type="hidden" name="id" value={selected.id}/>
+                  <input type="hidden" name="week_start" value={selected.week_start}/>
                   <div className="fb-note"><strong>{nameOf(selected)}</strong> · {dateLabel(selected.week_start)}<br/>Self: P {selected.performance} · C {selected.contribution} · K {selected.collaboration}</div>
+                  <div className="fb-note">Eviden sistem (read-only): {evidenceSummary ? `${evidenceSummary.assigned} tugas · ${evidenceSummary.approved} approved · ${evidenceSummary.submitted} menunggu review · ${evidenceSummary.revision} revision` : "Belum ada data task untuk periode ini"}</div>
                   <div className="fb-editor-row">
                     {DIMENSIONS.slice(0,2).map((d) => <div key={d.name}>
                       <label htmlFor={"cal-" + d.name}>{d.name}</label>
