@@ -2,8 +2,10 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { requireProfile } from "@/lib/auth";
 import { calibrateWeeklyFeedback } from "./actions";
+import { SemesterPicker } from "./semester-picker";
+import { SemesterTrendChart } from "./semester-trend-chart";
 
-type Params = { tab?: string; page?: string; week?: string; entry?: string; saved?: string; error?: string };
+type Params = { tab?: string; page?: string; semester?: string; entry?: string; saved?: string; error?: string };
 const DIMENSIONS = [
   { name: "Performance", self: "performance", verified: "calibration_performance" },
   { name: "Contribution", self: "contribution", verified: "calibration_contribution" },
@@ -28,9 +30,22 @@ function submissionTime(value: string) {
 function calibrationLabel(status: string) {
   return status === "calibrated" ? "Terkalibrasi" : status === "insufficient" ? "Bukti belum cukup" : "Belum ditinjau";
 }
-function barWidth(value: number | null) {
-  return String(Math.max(0, Math.min(100, (value ?? 0) / 5 * 100))) + "%";
+function semesterFromWeek(weekStart: string) {
+  // Attribute the weekly reflection to its Thursday, not its Monday.
+  // This handles weeks crossing June/July and December/January correctly.
+  const thursday = new Date(weekStart.slice(0,10) + "T00:00:00Z");
+  thursday.setUTCDate(thursday.getUTCDate() + 3);
+  return thursday.getUTCFullYear() + "-" + (thursday.getUTCMonth() < 6 ? "1" : "2");
 }
+function weightedIndex(row: any, calibrated = false) {
+  return calibrated
+    ? Number(row.calibration_performance) * .5 + Number(row.calibration_contribution) * .3 + Number(row.calibration_collaboration) * .2
+    : Number(row.performance) * .5 + Number(row.contribution) * .3 + Number(row.collaboration) * .2;
+}
+function mean(values: number[]): number | null {
+  return values.length ? values.reduce((a,b) => a+b, 0) / values.length : null;
+}
+function isoDate(d: Date) { return d.toISOString().slice(0,10); }
 
 export default async function WeeklyFeedbackPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
@@ -44,6 +59,25 @@ export default async function WeeklyFeedbackPage({ searchParams }: { searchParam
   let totalPages = 1;
   let history: any[] = [];
   let allRows: any[] = [];
+  const wib = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const currentYear = wib.getUTCFullYear();
+  const currentSemester = wib.getUTCMonth() < 6 ? 1 : 2;
+  const parsedSemester = /^(\d{4})-(1|2)$/.exec(params.semester ?? "");
+  const validYear = parsedSemester ? Number(parsedSemester[1]) : currentYear;
+  const reportYear = validYear >= 2026 && validYear <= currentYear ? validYear : currentYear;
+  const reportSemester = parsedSemester && validYear === reportYear ? Number(parsedSemester[2]) : currentSemester;
+  const activeSemester = reportYear + "-" + reportSemester;
+  const semesterLabel = "Semester " + (reportSemester === 1 ? "I" : "II") + " " + reportYear;
+  const monthsLabel = reportSemester === 1 ? "Januari–Juni" : "Juli–Desember";
+  const semesterStart = new Date(Date.UTC(reportYear, reportSemester === 1 ? 0 : 6, 1));
+  const semesterEnd = new Date(Date.UTC(reportYear, reportSemester === 1 ? 6 : 12, 0));
+  const semesterQueryStart = new Date(semesterStart);
+  semesterQueryStart.setUTCDate(semesterQueryStart.getUTCDate() - 7);
+  const semesterOptions: { value: string; label: string }[] = [];
+  for (let year = currentYear; year >= 2026; year--) {
+    semesterOptions.push({ value: year + "-2", label: "Semester II (Jul–Des) " + year });
+    semesterOptions.push({ value: year + "-1", label: "Semester I (Jan–Jun) " + year });
+  }
 
   if (tab === "history") {
     const { count, error: countError } = await supabase.from("weekly_feedback").select("id", { count:"exact", head:true });
@@ -57,39 +91,84 @@ export default async function WeeklyFeedbackPage({ searchParams }: { searchParam
     if (error) return <p className="notice">Riwayat feedback gagal dimuat.</p>;
     history = data ?? [];
   } else {
-    const { data, error } = await supabase.from("weekly_feedback").select(baseSelect)
-      .order("week_start", { ascending:false }).order("created_at", { ascending:false }).limit(500);
-    if (error) return <p className="notice">Data kalibrasi gagal dimuat. Pastikan migrasi sudah diterapkan.</p>;
-    allRows = data ?? [];
+    // Fetch the whole selected semester; never silently cap accumulated weekly history.
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase.from("weekly_feedback").select(baseSelect)
+        .gte("week_start", isoDate(semesterQueryStart))
+        .lte("week_start", isoDate(semesterEnd))
+        .order("week_start", { ascending:false })
+        .order("created_at", { ascending:false })
+        .range(offset, offset + 999);
+      if (error) return <p className="notice">Data kalibrasi gagal dimuat. Silakan coba lagi.</p>;
+      const batch = data ?? [];
+      allRows.push(...batch);
+      if (batch.length < 1000) break;
+      offset += 1000;
+    }
   }
-  const availableWeeks = [...new Set(allRows.map((r) => String(r.week_start)))];
-  const activeWeek = availableWeeks.includes(String(params.week ?? "")) ? String(params.week) : (availableWeeks[0] ?? "");
-  const weekRows = allRows.filter((r) => r.week_start === activeWeek);
-  const calibratedRows = weekRows.filter((r) => r.calibration_status === "calibrated" && DIMENSIONS.every((d) => r[d.verified] != null));
-  const matchedSelf = calibratedRows.length ? calibratedRows.reduce((sum, row) => sum + (Number(row.performance)*.5 + Number(row.contribution)*.3 + Number(row.collaboration)*.2), 0) / calibratedRows.length : null;
-  const calibratedIndex = calibratedRows.length ? calibratedRows.reduce((sum, row) => sum + (Number(row.calibration_performance)*.5 + Number(row.calibration_contribution)*.3 + Number(row.calibration_collaboration)*.2), 0) / calibratedRows.length : null;
-  const difference = matchedSelf == null || calibratedIndex == null ? null : matchedSelf - calibratedIndex;
-  const selected = weekRows.find((r) => r.id === params.entry) ?? weekRows.find((r) => r.calibration_status === "pending") ?? weekRows[0];
-  // Read-only task context for a supervisor's feedback calibration (never mutates scoring).
+  const semesterRows = allRows.filter((row) => semesterFromWeek(String(row.week_start)) === activeSemester);
+  const calibratedRows = semesterRows.filter((row) =>
+    row.calibration_status === "calibrated" && DIMENSIONS.every((dimension) => row[dimension.verified] !== null)
+  );
+  const selected = semesterRows.find((row) => row.id === params.entry)
+    ?? semesterRows.find((row) => row.calibration_status === "pending")
+    ?? semesterRows[0];
+  const tablePageSize = 6;
+  const tableTotalPages = Math.max(1, Math.ceil(semesterRows.length / tablePageSize));
+  const rawTablePage = Number.parseInt(params.page ?? "1", 10);
+  const tablePage = Number.isFinite(rawTablePage) ? Math.max(1, Math.min(rawTablePage, tableTotalPages)) : 1;
+  const tableRows = semesterRows.slice((tablePage - 1) * tablePageSize, tablePage * tablePageSize);
+
   let evidenceSummary: { assigned: number; approved: number; submitted: number; revision: number } | null = null;
-  if (selected && activeWeek) {
+  if (selected) {
     const { data: period } = await supabase.from("weekly_periods").select("id")
-      .eq("week_start", activeWeek).maybeSingle();
+      .eq("week_start", selected.week_start).maybeSingle();
     if (period) {
       const { data: taskRows } = await supabase.from("tasks").select("id,status")
         .eq("period_id", period.id).eq("assigned_to", selected.employee_id);
       if (taskRows) {
         evidenceSummary = {
           assigned: taskRows.length,
-          approved: taskRows.filter((t) => t.status === "approved").length,
-          submitted: taskRows.filter((t) => t.status === "submitted").length,
-          revision: taskRows.filter((t) => t.status === "revision").length,
+          approved: taskRows.filter((row) => row.status === "approved").length,
+          submitted: taskRows.filter((row) => row.status === "submitted").length,
+          revision: taskRows.filter((row) => row.status === "revision").length,
         };
       }
     }
   }
-  const chart = DIMENSIONS.map((d) => ({
-    label:d.name, self:avg(calibratedRows,d.self), calibrated:avg(calibratedRows,d.verified)
+
+  // Every Thursday in the semester is a weekly plotting position.
+  // Missing weeks remain null so they are not interpreted as poor performance.
+  const firstThursday = new Date(semesterStart);
+  firstThursday.setUTCDate(firstThursday.getUTCDate() + ((4 - firstThursday.getUTCDay() + 7) % 7));
+  const points: {weekStart:string;label:string;self:number|null;calibrated:number|null;submissions:number;calibrations:number}[] = [];
+  const byWeek = new Map<string, any[]>();
+  for (const row of semesterRows) {
+    const key = String(row.week_start);
+    const items = byWeek.get(key) ?? [];
+    items.push(row);
+    byWeek.set(key, items);
+  }
+  for (const day = new Date(firstThursday); day <= semesterEnd; day.setUTCDate(day.getUTCDate() + 7)) {
+    const monday = new Date(day);
+    monday.setUTCDate(monday.getUTCDate() - 3);
+    const weekStart = isoDate(monday);
+    const weekRows = byWeek.get(weekStart) ?? [];
+    const verified = weekRows.filter((row) => row.calibration_status === "calibrated" && DIMENSIONS.every((dim) => row[dim.verified] !== null));
+    points.push({
+      weekStart,
+      label: new Intl.DateTimeFormat("id-ID", {day:"2-digit",month:"short",timeZone:"UTC"}).format(day),
+      self: mean(weekRows.map((row) => weightedIndex(row))),
+      calibrated: mean(verified.map((row) => weightedIndex(row,true))),
+      submissions: weekRows.length,
+      calibrations: verified.length,
+    });
+  }
+  const dimensions = DIMENSIONS.map((dim) => ({
+    label: dim.name,
+    self: avg(semesterRows,dim.self),
+    calibrated: avg(calibratedRows,dim.verified),
   }));
   return (
     <div className="feedback-admin">
