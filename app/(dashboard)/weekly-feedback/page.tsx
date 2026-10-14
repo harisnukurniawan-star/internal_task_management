@@ -172,7 +172,7 @@ export default async function WeeklyFeedbackPage({ searchParams }: { searchParam
   }));
   return (
     <div className="feedback-admin">
-      <style>{".feedback-admin{height:calc(100dvh - 44px);min-height:0;display:flex;flex-direction:column;gap:8px;overflow:hidden}.feedback-admin .topbar{margin-bottom:2px}.fb-intro{display:flex;justify-content:space-between;align-items:center;gap:12px}.fb-intro small{font-size:10px;color:#667085}.fb-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,1fr);gap:9px;min-height:0;flex:1}.fb-dashboard{min-height:0;flex:1;display:grid;grid-template-rows:auto minmax(0,1fr) minmax(125px,.55fr);gap:8px;overflow:hidden}.fb-panel{border:1px solid #e1e6f0;border-radius:12px;background:#fff;padding:12px;min-height:0;overflow:auto}.fb-panel h3{font-size:13px;margin:0 0 8px;color:#24307b}.fb-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.fb-kpi{padding:10px 12px;background:#f7f8ff;border:1px solid #e1e6f0;border-radius:11px}.fb-kpi small{display:block;font-size:10px;color:#667085}.fb-kpi strong{font-size:20px;color:#24307b}.fb-kpi span{font-size:10px;color:#667085}.fb-bars{display:grid;gap:11px;margin-top:12px}.fb-dimension{display:grid;grid-template-columns:110px 1fr 38px;align-items:center;gap:10px}.fb-dimension label{font-size:12px;font-weight:700}.fb-track{height:9px;background:#edf0f8;border-radius:999px;overflow:hidden}.fb-fill{height:100%;border-radius:999px}.fb-self{background:#91b5e1}.fb-calibrated{background:#2a3587}.fb-caption{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#667085}.fb-key{display:inline-flex;align-items:center;gap:5px}.fb-dot{width:8px;height:8px;border-radius:2px;background:#91b5e1}.fb-dot.dark{background:#2a3587}.fb-standalone{font-size:10px;color:#667085;line-height:1.45;margin-top:8px}.fb-editor{display:grid;gap:8px}.fb-editor select,.fb-editor textarea{width:100%;background:#fff;border:1px solid #dce1ec;padding:7px 9px;border-radius:8px;font-size:12px}.fb-editor label{font-size:11px;font-weight:700;color:#24307b}.fb-editor textarea{resize:vertical;min-height:50px}.fb-editor-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.fb-editor-row>div{min-width:0;display:grid;gap:4px}.fb-editor .btn{width:100%;padding:9px}.fb-note{padding:7px 9px;background:#f4f5ff;border-radius:8px;color:#42527f;font-size:11px}.fb-table-panel{flex:1;min-height:0;overflow:auto}.fb-table-panel table{table-layout:fixed}.fb-table-panel th,.fb-table-panel td{font-size:11px;padding:9px 8px}.fb-table-panel td{white-space:normal;word-break:break-word}.fb-pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 2px;font-size:11px}.fb-pagination a{padding:6px 11px;border:1px solid #dce1ec;border-radius:8px;color:#2a3587;font-weight:700}.fb-week{display:flex;gap:5px;overflow:auto;padding-bottom:3px;align-items:center}.fb-week a{white-space:nowrap;border:1px solid #dce1ec;padding:5px 8px;border-radius:8px;font-size:10px;color:#344054}.fb-week a.active{background:#2a3587;color:white}.fb-list{width:100%;border-collapse:collapse}.fb-list td,.fb-list th{font-size:11px;padding:7px 8px}.fb-list a{font-weight:700;color:#2a3587}.fb-flag{font-size:10px;border-radius:6px;background:#f0f3fb;padding:4px 6px;display:inline-block}.fb-empty{padding:24px;text-align:center;color:#667085;font-size:13px}@media(max-width:1050px){.fb-grid{grid-template-columns:minmax(0,1fr) minmax(260px,.9fr)}.fb-dimension{grid-template-columns:75px 1fr 33px}}@media(max-width:760px){.feedback-admin{height:auto;min-height:calc(100dvh - 44px);overflow:visible}.fb-dashboard{display:flex;flex-direction:column;overflow:visible}.fb-kpis{grid-template-columns:repeat(2,1fr)}.fb-grid{display:flex;flex-direction:column}.fb-panel{overflow:visible}.fb-table-panel{overflow:auto}}"} </style>
+      <style>{"\n.feedback-admin{height:calc(100dvh - 44px);min-height:0;display:flex;flex-direction:column;gap:8px;overflow:hidden}\n.feedback-admin .topbar{margin-bottom:2px}\n.fb-intro{display:flex;justify-content:space-between;align-items:center;gap:12px;flex:0 0 auto}\n.fb-intro small{font-size:10px;color:#667085}\n.fb-panel{border:1px solid #e0e5ef;border-radius:12px;background:#fff;padding:12px;min-width:0;min-height:0}\n.fb-panel h3{font-size:13px;margin:0 0 8px;color:#24307b}\n.fb-caption{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#667085}\n.fb-standalone{font-size:10px;color:#667085;line-height:1.45;margin-top:8px}\n.fb-table-panel{flex:1;min-height:0;overflow:auto}\n.fb-table-panel table{table-layout:fixed}\n.fb-table-panel th,.fb-table-panel td{font-size:11px;padding:9px 8px}\n.fb-table-panel td{white-space:normal;word-break:break-word}\n.fb-pagination{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:4px 2px;font-size:11px}\n.fb-pagination a{padding:6px 11px;border:1px solid #dce1ec;border-radius:8px;color:#2a3587;font-weight:700}\n.fb-flag{font-size:10px;border-radius:6px;background:#f0f3fb;padding:4px 6px;display:inline-block}\n.fb-empty{padding:24px;text-align:center;color:#667085;font-size:13px}\n.fb-semester-dashboard{display:grid;grid-template-rows:auto minmax(0,1fr) minmax(132px,.41fr);gap:9px;flex:1;min-height:0;overflow:hidden}\n.fb-period-row{display:flex;justify-content:space-between;align-items:center;gap:15px;min-height:36px}\n.fb-semester-picker{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;color:#24307b}\n.fb-semester-picker select{border:1px solid #cfd8e8;border-radius:9px;padding:8px 34px 8px 12px;color:#24307b;background:#fff;outline-offset:2px;font-weight:700;font-size:12px;min-width:232px;cursor:pointer}\n.fb-period-hint{font-size:11px;color:#667085}\n.fb-upper-layout{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(285px,.9fr);gap:10px;min-height:0}\n.fb-chart-main{display:flex;flex-direction:column;gap:8px;border:1px solid #d9e1f0;border-left:4px solid #2a3587;border-radius:13px;background:linear-gradient(180deg,#fbfcff 0%,#fff 35%);padding:13px 16px;min-width:0;min-height:0;overflow:hidden}\n.fb-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px}\n.fb-chart-kicker{letter-spacing:.1em;font-size:9px;color:#5b74a5;font-weight:800}\n.fb-chart-head h2{font-size:17px;color:#24307b;margin:2px 0 3px}\n.fb-chart-head p{font-size:10px;color:#667085;margin:0}\n.fb-chart-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:10px;color:#667085;white-space:nowrap}\n.fb-chart-meta strong{font-size:13px;color:#24307b}\n.fb-meta-divider{color:#b9c5db}\n.fb-chart-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:#475467}\n.fb-chart-legend span{display:inline-flex;align-items:center;gap:7px}\n.fb-legend-swatch{display:inline-block;width:21px;height:4px;border-radius:9px}\n.fb-legend-swatch.self{background:#75a9df}\n.fb-legend-swatch.verified{background:#28388e}\n.fb-chart-canvas{flex:1 1 auto;min-height:130px;min-width:0}\n.fb-chart-empty{flex:1;min-height:130px;display:flex;justify-content:center;align-items:center;flex-direction:column;gap:8px;text-align:center;color:#667085;background:repeating-linear-gradient(0deg,transparent 0,transparent 48px,#f3f5fa 49px,#f3f5fa 50px);border-radius:9px;padding:24px}\n.fb-chart-empty strong{font-size:14px;color:#344469}\n.fb-chart-empty span{font-size:11px;max-width:420px;line-height:1.5}\n.fb-dimension-section{flex:0 0 auto;border-top:1px solid #e6eaf3;padding-top:7px}\n.fb-dimension-title{font-size:11px;color:#24307b;font-weight:800;margin-bottom:7px}\n.fb-dimension-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}\n.fb-dimension-tile{border:1px solid #e5e9f3;border-radius:8px;padding:6px 8px;background:#fff;min-width:0}\n.fb-dimension-top{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:5px;font-size:10px;color:#24307b}\n.fb-dimension-top span{font-size:9px;color:#98a2b3}\n.fb-mini-row{display:grid;grid-template-columns:50px minmax(0,1fr) 30px;align-items:center;gap:5px;margin:3px 0;font-size:9px;color:#667085}\n.fb-mini-row strong{font-size:10px;color:#24307b;text-align:right}\n.fb-mini-track{height:7px;background:#edf0f8;border-radius:99px;overflow:hidden}\n.fb-mini-fill{height:100%;border-radius:99px}\n.fb-mini-fill.self{background:#75a9df}\n.fb-mini-fill.verified{background:#28388e}\n.fb-chart-footnote{flex:0 0 auto;color:#78849a;font-size:9px;line-height:1.32;margin:0}\n.fb-calibration-panel{overflow:auto}\n.fb-calibration-panel h3{position:sticky;top:-12px;background:#fff;padding:2px 0 8px;z-index:1}\n.fb-editor{display:grid;gap:8px}\n.fb-editor select,.fb-editor textarea{width:100%;background:#fff;border:1px solid #dce1ec;padding:7px 9px;border-radius:8px;font-size:12px}\n.fb-editor label{font-size:11px;font-weight:700;color:#24307b}\n.fb-editor textarea{resize:vertical;min-height:50px}\n.fb-editor-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}\n.fb-editor-row>div{min-width:0;display:grid;gap:4px}\n.fb-editor .btn{width:100%;padding:9px}\n.fb-note{padding:7px 9px;background:#f4f5ff;border-radius:8px;color:#42527f;font-size:11px;line-height:1.5}\n.fb-semester-history{display:flex;flex-direction:column;gap:4px;overflow:hidden;padding:8px 10px}\n.fb-semester-history-header{display:flex;justify-content:space-between;gap:12px;align-items:center}\n.fb-semester-history-header h3{margin:0}\n.fb-semester-history-header span{font-size:10px;color:#667085}\n.fb-table-scroll{flex:1;min-height:0;overflow:auto}\n.fb-list{width:100%;border-collapse:collapse;table-layout:fixed}\n.fb-list td,.fb-list th{font-size:11px;padding:7px 8px;line-height:1.2}\n.fb-list td{overflow:hidden;text-overflow:ellipsis}\n.fb-list a{font-weight:700;color:#2a3587}\n.fb-semester-history .fb-pagination{padding:2px 3px;font-size:10px}\n.fb-semester-history .fb-pagination a{padding:3px 8px;font-size:10px}\n@media(max-width:1050px){.fb-upper-layout{grid-template-columns:minmax(0,1.7fr) minmax(260px,1fr)}.fb-chart-meta{display:none}.fb-dimension-grid{gap:4px}.fb-mini-row{grid-template-columns:39px minmax(0,1fr) 28px;gap:3px}.fb-dimension-tile{padding:5px}}\n@media(max-width:750px){.feedback-admin{height:auto;min-height:calc(100dvh - 44px);overflow:visible}.fb-semester-dashboard{display:flex;flex-direction:column;overflow:visible}.fb-period-row{align-items:flex-start;flex-wrap:wrap}.fb-upper-layout{display:flex;flex-direction:column}.fb-chart-canvas{height:260px;flex:none}.fb-chart-main{overflow:visible}.fb-dimension-grid{grid-template-columns:1fr}.fb-calibration-panel,.fb-semester-history{overflow:visible}.fb-table-scroll{overflow:auto;max-height:290px}.fb-table-panel{overflow:auto}.fb-period-hint{font-size:10px}}\n"}</style>
       <div className="fb-intro">
         <PageHeader title="Weekly Feedback" subtitle="Refleksi staf dan kalibrasi mingguan untuk coaching, bukan penilaian atau klasemen." />
         <small>Feedback only · Terpisah dari scoring</small>
@@ -203,39 +203,28 @@ export default async function WeeklyFeedbackPage({ searchParams }: { searchParam
           </div></div>
         </>
       ) : (
-        <div className="fb-dashboard">
-          <div className="fb-week">
-            <strong style={{fontSize:11,marginRight:4}}>Minggu:</strong>
-            {availableWeeks.slice(0,18).map((week) => (
-              <Link key={week} className={week === activeWeek ? "active" : ""} href={"/weekly-feedback?tab=calibration&week=" + week}>{dateLabel(week)}</Link>
-            ))}
-            {!availableWeeks.length ? <span className="muted small">Belum ada pengisian</span> : null}
+        <div className="fb-semester-dashboard">
+          <div className="fb-period-row">
+            <SemesterPicker selected={activeSemester} options={semesterOptions} />
+            <span className="fb-period-hint">Akumulasi mingguan · {monthsLabel} {reportYear} · Feedback only</span>
           </div>
-          <div className="fb-kpis">
-            <div className="fb-kpi"><small>Feedback masuk</small><strong>{weekRows.length}</strong><span>pegawai · minggu dipilih</span></div>
-            <div className="fb-kpi"><small>Terkalibrasi</small><strong>{calibratedRows.length}</strong><span>validasi oleh atasan</span></div>
-            <div className="fb-kpi"><small>Self · terkalibrasi</small><strong>{num(matchedSelf)}</strong><span>indeks persepsi / 5</span></div>
-            <div className="fb-kpi"><small>Calibration / selisih</small><strong>{num(calibratedIndex)}</strong><span>gap {num(difference)} poin</span></div>
-          </div>
-          <div className="fb-grid">
-            <section className="fb-panel">
-              <h3>Perbandingan Persepsi vs Kalibrasi</h3>
-              <div className="fb-caption"><span className="fb-key"><span className="fb-dot" /> Self-Assessment</span><span className="fb-key"><span className="fb-dot dark"/> Supervisor Calibration</span></div>
-              {calibratedRows.length ? <div className="fb-bars">
-                {chart.map((row) => <div key={row.label}>
-                  <strong style={{fontSize:11}}>{row.label}</strong>
-                  <div className="fb-dimension"><label>Persepsi</label><div className="fb-track"><div className="fb-fill fb-self" style={{width:barWidth(row.self)}} /></div><span style={{fontSize:11}}>{num(row.self)}</span></div>
-                  <div className="fb-dimension"><label>Kalibrasi</label><div className="fb-track"><div className="fb-fill fb-calibrated" style={{width:barWidth(row.calibrated)}} /></div><span style={{fontSize:11}}>{num(row.calibrated)}</span></div>
-                </div>)}
-              </div> : <p className="fb-empty">Belum ada kalibrasi pada minggu ini. Grafik muncul setelah atasan memvalidasi feedback staf.</p>}
-              <p className="fb-standalone">Perbandingan hanya untuk isian yang sudah dikalibrasi, agar populasi self dan supervisor setara. Indeks diagnostik menggunakan bobot 50% Performance, 30% Contribution, 20% Collaboration. Angka ini tidak masuk nilai tugas, KPI, atau klasemen.</p>
-            </section>
-            <section className="fb-panel">
+          <div className="fb-upper-layout">
+            <SemesterTrendChart
+              points={points}
+              dimensions={dimensions}
+              semesterLabel={semesterLabel}
+              totalEntries={semesterRows.length}
+              totalCalibrated={calibratedRows.length}
+            />
+            <section className="fb-panel fb-calibration-panel">
               <h3>Kalibrasi Feedback Pegawai</h3>
-              {!selected ? <p className="fb-empty">Belum ada feedback untuk ditinjau.</p> : (
-                <form className="fb-editor" action={calibrateWeeklyFeedback}>
+              {!selected ? (
+                <p className="fb-empty">Belum ada feedback pada {semesterLabel} untuk ditinjau.</p>
+              ) : (
+                <form key={selected.id} className="fb-editor" action={calibrateWeeklyFeedback}>
                   <input type="hidden" name="id" value={selected.id}/>
                   <input type="hidden" name="week_start" value={selected.week_start}/>
+                  <input type="hidden" name="semester" value={activeSemester}/>
                   <div className="fb-note"><strong>{nameOf(selected)}</strong> · {dateLabel(selected.week_start)}<br/>Self: P {selected.performance} · C {selected.contribution} · K {selected.collaboration}</div>
                   <div className="fb-note">Eviden sistem (read-only): {evidenceSummary ? `${evidenceSummary.assigned} tugas · ${evidenceSummary.approved} approved · ${evidenceSummary.submitted} menunggu review · ${evidenceSummary.revision} revision` : "Belum ada data task untuk periode ini"}</div>
                   <div className="fb-editor-row">
@@ -265,19 +254,34 @@ export default async function WeeklyFeedbackPage({ searchParams }: { searchParam
               )}
             </section>
           </div>
-          <section className="fb-panel" style={{padding:8}}>
-            <h3>Feedback Pegawai · {activeWeek ? dateLabel(activeWeek) : "—"}</h3>
-            <div style={{overflow:"auto",maxHeight:"100%"}}>
-              <table className="fb-list"><thead><tr><th>Pegawai</th><th>Self P / C / K</th><th>Kalibrasi P / C / K</th><th>Status</th><th>Aksi</th></tr></thead><tbody>
-                {weekRows.map((row) => <tr key={row.id}>
-                  <td>{nameOf(row)}</td><td>{row.performance} / {row.contribution} / {row.collaboration}</td>
-                  <td>{row.calibration_status === "calibrated" ? [row.calibration_performance,row.calibration_contribution,row.calibration_collaboration].join(" / ") : "—"}</td>
-                  <td>{calibrationLabel(row.calibration_status)}</td>
-                  <td><Link href={"/weekly-feedback?tab=calibration&week=" + activeWeek + "&entry=" + row.id}>Tinjau</Link></td>
-                </tr>)}
-                {!weekRows.length ? <tr><td className="fb-empty" colSpan={5}>Belum ada pengisian.</td></tr> : null}
-              </tbody></table>
+          <section className="fb-panel fb-semester-history">
+            <div className="fb-semester-history-header">
+              <h3>Riwayat Feedback Pegawai · {semesterLabel}</h3>
+              <span>{semesterRows.length} pengisian · {calibratedRows.length} terkalibrasi</span>
             </div>
+            <div className="fb-table-scroll">
+              <table className="fb-list">
+                <thead><tr><th style={{width:"15%"}}>Minggu</th><th style={{width:"23%"}}>Pegawai</th><th style={{width:"21%"}}>Self P / C / K</th><th style={{width:"21%"}}>Kalibrasi P / C / K</th><th style={{width:"13%"}}>Status</th><th style={{width:"7%"}}>Aksi</th></tr></thead>
+                <tbody>
+                  {tableRows.map((row) => <tr key={row.id}>
+                    <td>{dateLabel(row.week_start)}</td>
+                    <td>{nameOf(row)}</td>
+                    <td>{row.performance} / {row.contribution} / {row.collaboration}</td>
+                    <td>{row.calibration_status === "calibrated" ? [row.calibration_performance,row.calibration_contribution,row.calibration_collaboration].join(" / ") : "—"}</td>
+                    <td><span className="fb-flag">{calibrationLabel(row.calibration_status)}</span></td>
+                    <td><Link href={"/weekly-feedback?tab=calibration&semester=" + activeSemester + "&page=" + tablePage + "&entry=" + row.id}>Tinjau</Link></td>
+                  </tr>)}
+                  {!tableRows.length ? <tr><td className="fb-empty" colSpan={6}>Belum ada pengisian pada {semesterLabel}.</td></tr> : null}
+                </tbody>
+              </table>
+            </div>
+            {tableTotalPages > 1 ? <div className="fb-pagination">
+              <span>Halaman {tablePage} dari {tableTotalPages}</span>
+              <div style={{display:"flex",gap:8}}>
+                {tablePage > 1 ? <Link href={"/weekly-feedback?tab=calibration&semester=" + activeSemester + "&page=" + (tablePage-1)}>← Sebelumnya</Link> : null}
+                {tablePage < tableTotalPages ? <Link href={"/weekly-feedback?tab=calibration&semester=" + activeSemester + "&page=" + (tablePage+1)}>Berikutnya →</Link> : null}
+              </div>
+            </div> : null}
           </section>
         </div>
       )}
