@@ -30,7 +30,7 @@ export async function calibrateWeeklyFeedback(formData: FormData) {
     redirect("/weekly-feedback?tab=calibration&entry=" + id + weekParam + "&error=score");
   }
   const note = String(formData.get("note") || "").trim().slice(0, 500);
-  const { error } = await supabase.from("weekly_feedback").update({
+  const { data: updated, error } = await supabase.from("weekly_feedback").update({
     calibration_status: status,
     calibration_performance: status === "calibrated" ? performance : null,
     calibration_contribution: status === "calibrated" ? contribution : null,
@@ -38,8 +38,8 @@ export async function calibrateWeeklyFeedback(formData: FormData) {
     calibration_note: note || null,
     calibrated_by: profile.id,
     calibrated_at: new Date().toISOString(),
-  }).eq("id", id);
-  if (error) redirect("/weekly-feedback?tab=calibration&entry=" + id + weekParam + "&error=save");
+  }).eq("id", id).select("id").maybeSingle();
+  if (error || !updated) redirect("/weekly-feedback?tab=calibration&entry=" + id + weekParam + "&error=save");
   revalidatePath("/weekly-feedback");
   redirect("/weekly-feedback?tab=calibration&entry=" + id + weekParam + "&saved=1");
 }
