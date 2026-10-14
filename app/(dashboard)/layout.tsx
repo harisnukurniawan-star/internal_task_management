@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import { WeeklyFeedbackGate } from "@/components/weekly-feedback-gate";
 import { requireProfile } from "@/lib/auth";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -32,6 +33,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
   }
 
+  const jakartaNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const jakartaWeekday = jakartaNow.getUTCDay();
+  const feedbackDay = jakartaWeekday === 4 || jakartaWeekday === 5;
+  jakartaNow.setUTCDate(jakartaNow.getUTCDate() - ((jakartaWeekday + 6) % 7));
+  const weekStart = jakartaNow.toISOString().slice(0, 10);
+
   return (
     <AppShell
       role={profile.role}
@@ -40,6 +47,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       assignmentCount={assignmentCount}
     >
       {children}
+      {!supervisor && feedbackDay ? <WeeklyFeedbackGate weekStart={weekStart} /> : null}
     </AppShell>
   );
 }
