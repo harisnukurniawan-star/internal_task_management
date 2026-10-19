@@ -329,8 +329,13 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
         .employee-submit-actions .field>small{font-size:10px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .employee-submit-actions .btn{padding:8px 10px;display:block!important;width:100%;min-height:36px;position:relative;z-index:2;align-self:end}
         @supports selector(:has(*)){
-          .main:has(.mytasks-fit){height:100vh;overflow:hidden;padding-top:12px;padding-bottom:12px}
-          .main:has(.mytasks-fit) .mytasks-fit{height:calc(100vh - 24px)}
+          /* Keep the entire employee My Tasks shell just inside the desktop viewport. */
+          @media(min-width:901px){
+            .shell:has(.mytasks-fit){height:calc(100vh - 8px);height:calc(100dvh - 8px);min-height:0;overflow:hidden}
+            .shell:has(.mytasks-fit)>.sidebar{height:100%;min-height:0;overflow:hidden}
+            .shell:has(.mytasks-fit)>.main{height:100%;min-height:0;overflow:hidden;padding-top:12px;padding-bottom:12px}
+            .main:has(.mytasks-fit) .mytasks-fit{height:100%;min-height:0}
+          }
         }
         @media(max-width:900px){.main:has(.mytasks-fit){height:auto;overflow:visible;padding-top:14px;padding-bottom:14px}.mytasks-fit{height:auto;overflow:visible}.task-tile-grid{overflow:visible}.task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:block}.task-accordion[open]{height:auto}.task-detail-body{overflow:visible}.employee-submit-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;overflow:visible}.employee-context-panel,.employee-input-panel,.employee-submit-actions{grid-column:1;grid-row:auto;overflow:visible}.employee-input-panel{padding-right:0;scrollbar-gutter:auto}.employee-submit-actions{padding:7px 0 0}}
         @media(max-width:700px){.progress-choice-grid{grid-template-columns:1fr}.task-accordion[open]{grid-column:auto}.task-tile-summary{align-items:flex-start}.task-tile-main strong{white-space:normal}.employee-submit-actions{grid-template-columns:minmax(0,1fr)}}
