@@ -277,25 +277,30 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
         .task-accordion{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px #2a35870d;overflow:hidden;min-width:0}
         .task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:none}
         .task-accordion[open]{grid-column:1/-1;height:100%;min-height:0;display:flex;flex-direction:column}
-        .task-tile-summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 11px;min-height:52px;flex:0 0 auto}
+        .task-tile-summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:9px;padding:5px 10px;min-height:42px;flex:0 0 auto}
         .task-tile-summary::-webkit-details-marker{display:none}
         .task-tile-summary:hover{background:var(--blue-soft)}
-        .task-tile-main{display:grid;gap:4px;min-width:0}
-        .task-tile-main strong{font-size:14px;color:var(--text);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .task-tile-due{font-size:11px;color:var(--muted)}
-        .task-tile-side{display:flex;align-items:flex-end;gap:4px;flex-direction:column;flex:0 0 auto}
+        .task-tile-main{display:grid;gap:2px;min-width:0}
+        .task-tile-main strong{font-size:13px;color:var(--text);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .task-header-meta{display:flex;align-items:center;flex-wrap:wrap;gap:2px 12px;line-height:1.15;min-width:0}
+        .task-tile-due{font-size:10px;color:var(--muted)}
+        .task-tile-side{display:flex;align-items:flex-end;gap:1px;flex-direction:column;flex:0 0 auto}
+        .task-tile-side .badge{font-size:10px;padding:2px 7px}
         .task-open-label{font-size:10px;font-weight:700;color:var(--navy)}
         .task-accordion[open] .task-open-label{font-size:0}
         .task-accordion[open] .task-open-label:after{content:'Tutup detail';font-size:10px}
-        .task-detail-body{border-top:1px solid var(--line);padding:7px 9px;flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+        .task-detail-body{border-top:1px solid var(--line);padding:5px 8px;flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:4px}
         .task-detail-meta{margin:0 0 4px;flex:0 0 auto}
-        .task-claim-compact{margin:0 0 7px;padding:7px 9px;flex:0 0 auto;max-height:116px;overflow:hidden}
-        .task-claim-compact p{margin:4px 0;font-size:12px}
-        .task-claim-compact .task-meta{margin-top:0}
-        .task-claim-compact .feedback{margin-top:5px;padding:6px;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px 8px}
+        .task-claim-compact{margin:0;padding:5px 8px;flex:0 0 auto;max-height:96px;overflow-y:auto;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:2px 10px}
+        .task-claim-compact p{margin:0;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+        .task-claim-compact .task-meta{grid-column:1/-1;margin:0;gap:5px 12px;font-size:10px;line-height:1.2}
+        .task-claim-compact > .muted.small{font-size:10px;line-height:1.2}
+        .task-claim-compact > div:has(.evidence-link){min-width:0;grid-column:1/-1;margin-top:0!important}
+        .task-claim-compact .feedback{grid-column:1/-1;margin-top:0;padding:4px 6px;grid-template-columns:minmax(0,170px) minmax(0,1fr);gap:2px 8px;font-size:10px;line-height:1.2}
+        .task-claim-compact .feedback strong,.task-claim-compact .feedback span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
         .employee-submit-grid{display:grid!important;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);grid-template-rows:minmax(0,1fr) auto;gap:8px!important;flex:1 1 auto;min-height:0;margin-top:0!important;overflow:hidden}
         .employee-context-panel,.employee-input-panel{min-width:0;min-height:0;display:flex;flex-direction:column;gap:5px}
-        .employee-context-panel{grid-column:1;grid-row:1 / 3;overflow-y:auto}
+        .employee-context-panel{grid-column:1;grid-row:1;overflow-y:auto;overscroll-behavior:contain}
         .employee-context-panel .submission-box,.employee-context-panel .notice{margin:0;padding:6px 8px}
         .employee-context-panel .submission-box p{margin:5px 0 0;font-size:12px;line-height:1.3}
         .employee-context-panel .notice{font-size:12px;line-height:1.25}
@@ -317,14 +322,18 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
         .progress-choice small{font-size:10px;color:var(--muted);font-weight:400}
         .progress-option input:checked + .progress-choice{border-color:var(--navy);background:var(--blue-soft);box-shadow:0 0 0 2px #2a35871a inset}
         .progress-option input:checked + .progress-choice .progress-icon{background:var(--navy);color:#fff}
-        .employee-submit-actions{grid-column:2;grid-row:2;min-width:0;position:relative;z-index:3;background:#fff;border-top:1px solid var(--line);padding:6px 4px 2px 0}
-        .employee-submit-actions .btn{padding:9px 12px;display:block!important;width:100%;position:relative;z-index:2}
+        .employee-submit-actions{grid-column:1/-1;grid-row:2;min-width:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,215px);gap:10px;align-items:end;position:relative;z-index:3;background:#fff;border-top:1px solid var(--line);padding:5px 0 0}
+        .employee-submit-actions .field{gap:2px;min-width:0}
+        .employee-submit-actions .field label{font-size:11px}
+        .employee-submit-actions input[type=file]{min-width:0;width:100%;padding:4px 6px;font-size:11px;border-radius:7px}
+        .employee-submit-actions .field>small{font-size:10px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .employee-submit-actions .btn{padding:8px 10px;display:block!important;width:100%;min-height:36px;position:relative;z-index:2;align-self:end}
         @supports selector(:has(*)){
           .main:has(.mytasks-fit){height:100vh;overflow:hidden;padding-top:12px;padding-bottom:12px}
           .main:has(.mytasks-fit) .mytasks-fit{height:calc(100vh - 24px)}
         }
         @media(max-width:900px){.main:has(.mytasks-fit){height:auto;overflow:visible;padding-top:14px;padding-bottom:14px}.mytasks-fit{height:auto;overflow:visible}.task-tile-grid{overflow:visible}.task-tile-grid:has(.task-accordion[open]) .task-accordion:not([open]){display:block}.task-accordion[open]{height:auto}.task-detail-body{overflow:visible}.employee-submit-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:auto;overflow:visible}.employee-context-panel,.employee-input-panel,.employee-submit-actions{grid-column:1;grid-row:auto;overflow:visible}.employee-input-panel{padding-right:0;scrollbar-gutter:auto}.employee-submit-actions{padding:7px 0 0}}
-        @media(max-width:700px){.progress-choice-grid{grid-template-columns:1fr}.task-accordion[open]{grid-column:auto}.task-tile-summary{align-items:flex-start}.task-tile-main strong{white-space:normal}}
+        @media(max-width:700px){.progress-choice-grid{grid-template-columns:1fr}.task-accordion[open]{grid-column:auto}.task-tile-summary{align-items:flex-start}.task-tile-main strong{white-space:normal}.employee-submit-actions{grid-template-columns:minmax(0,1fr)}}
       `}</style>
 
       <div className="task-tile-grid">
@@ -342,9 +351,13 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
             <details className="task-accordion" name="employee-task" key={task.id} open={task.id === selectedTaskId}>
               <summary className="task-tile-summary">
                 <div className="task-tile-main">
-                  <strong>{task.title}</strong>
-                  {isCarryOver ? <span className="task-tile-due" style={{ color: "var(--amber)", fontWeight: 700 }}>Carry over · {taskPeriod?.label || "Periode sebelumnya"}</span> : null}
-                  <span className="task-tile-due">Due: {task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</span>
+                  <strong title={task.title}>{task.title}</strong>
+                  <div className="task-header-meta">
+                    {isCarryOver ? <span className="task-tile-due" style={{ color: "var(--amber)", fontWeight: 700 }}>Carry over · {taskPeriod?.label || "Periode sebelumnya"}</span> : null}
+                    <span className="task-tile-due">Due: {task.due_at ? new Date(task.due_at).toLocaleDateString("id-ID") : "-"}</span>
+                    <span className="task-tile-due">Priority: {task.priority}</span>
+                    <span className="task-tile-due">Kompleksitas: {complexityLabel(task.complexity)}</span>
+                  </div>
                 </div>
                 <div className="task-tile-side">
                   <StatusBadge status={task.status} />
@@ -353,12 +366,6 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
               </summary>
 
               <div className="task-detail-body">
-                <div className="task-meta task-detail-meta">
-                  <span>Priority: {task.priority}</span>
-                  <span>Kompleksitas: {complexityLabel(task.complexity)}</span>
-                  <span>Due: {task.due_at ? new Date(task.due_at).toLocaleString("id-ID") : "-"}</span>
-                </div>
-
                 {claim ? (
                   <div className="submission-box task-claim-compact">
                     <div className="task-meta"><span>Submission v{claim.version}</span><span>Dikirim: {new Date(claim.submitted_at).toLocaleString("id-ID")}</span></div>
@@ -459,12 +466,12 @@ export default async function MyTasksPage({ searchParams }: { searchParams: Prom
                         <label>Komentar / Keterangan <span className="muted">(opsional)</span></label>
                         <textarea name="employee_comment" maxLength={500} placeholder="Catatan atau kendala..." />
                       </div>
+                    </div>
+                    <div className="employee-submit-actions">
                       <div className="field">
                         <label>Upload evidence <span className="muted">(wajib)</span></label>
                         <EvidenceFileInput />
                       </div>
-                    </div>
-                    <div className="employee-submit-actions">
                       <button className="btn" type="submit">{task.status === "revision" ? "Kirim Revisi" : "Submit Realisasi"}</button>
                     </div>
                   </form>
