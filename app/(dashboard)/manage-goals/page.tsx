@@ -281,6 +281,8 @@ export default async function ManageGoalsPMGMPage({
   return (
     <div className={`pmgm-shell ${supervisor ? "" : "pmgm-self-only"}`}>
       <style>{`
+        /* Manage Goals uses the full top edge so the sidebar has no empty band at the upper-left. */
+        .shell:has(.pmgm-shell) > .sidebar{padding-top:0}
         .pmgm-shell{height:calc(100vh - 44px);display:grid;grid-template-columns:230px minmax(0,1fr);border:1px solid var(--line);background:#fff;overflow:hidden}
         .pmgm-shell.pmgm-self-only{grid-template-columns:minmax(0,1fr)}
         .pmgm-people{border-right:1px solid #d9dee8;background:#fff;min-width:0;display:flex;flex-direction:column}
