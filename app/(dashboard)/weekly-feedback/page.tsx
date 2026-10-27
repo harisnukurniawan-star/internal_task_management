@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { saveWeeklyCalibration } from "./actions";
 import { SemesterPicker } from "./semester-picker";
 import { EmployeeRadarDashboard } from "./employee-radar-dashboard";
+import { StaffWeeklyFeedbackPage } from "./staff-page";
 
 type Params = { tab?: string; page?: string; semester?: string; entry?: string; saved?: string; error?: string };
 const DIMENSIONS = [
@@ -42,7 +43,8 @@ function isoDate(d: Date) { return d.toISOString().slice(0,10); }
 export default async function WeeklyFeedbackPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
   const { supabase, profile } = await requireProfile();
-  if (!["supervisor", "admin"].includes(profile.role)) return <p>Akses khusus atasan.</p>;
+  if (profile.role === "employee") return <StaffWeeklyFeedbackPage supabase={supabase} profileId={profile.id} params={params} />;
+  if (!["supervisor", "admin"].includes(profile.role)) return <p>Akses tidak tersedia.</p>;
   const tab = params.tab === "calibration" ? "calibration" : "history";
   const pageSize = 8;
   const baseSelect = "id,employee_id,week_start,created_at,performance,contribution,collaboration,calibration_status,calibration_performance,calibration_contribution,calibration_collaboration,calibration_note,calibrated_at,employees(full_name)";

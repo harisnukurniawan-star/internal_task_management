@@ -86,6 +86,7 @@ export function AppShell({
                 <span>My Tasks</span>
                 <NotificationBadge count={assignmentCount} />
               </Link>
+              <Link href="/weekly-feedback">Weekly Feedback</Link>
             </>
           )}
           <Link href="/leaderboard">Leaderboard</Link>
