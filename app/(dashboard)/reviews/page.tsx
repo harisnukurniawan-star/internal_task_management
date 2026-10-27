@@ -6,7 +6,7 @@ import { requireProfile } from "@/lib/auth";
 import { QUALITY_OPTIONS, TIMELINESS_RULE, complexityLabel, qualityLabel } from "@/lib/scoring";
 import { evaluateClaim } from "../actions";
 
-type ReviewSearchParams = FlashParams & { page?: string; tab?: string; edit?: string };
+type ReviewSearchParams = FlashParams & { page?: string; tab?: string; edit?: string; q?: string; sort?: string };
 
 function relationOne(value: any) {
   return Array.isArray(value) ? value[0] : value;
@@ -102,10 +102,40 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const progressLabel = claim?.progress_status === "lanjut_pekan_depan" ? "Lanjut pekan depan" : "Selesai";
   const hasEvidence = evidenceRows.length > 0;
 
+  // Filter/sort the full history before pagination, not just the current ten rows.
+  const historyQuery = String(params.q || "").trim().slice(0, 120);
+  const historySortOptions = ["date_desc", "date_asc", "employee_asc", "employee_desc", "task_asc", "task_desc"];
+  const historySort = historySortOptions.includes(params.sort || "") ? String(params.sort) : "date_desc";
+  const collator = new Intl.Collator("id-ID", { sensitivity: "base", numeric: true });
+  const normalizedQuery = historyQuery.toLocaleLowerCase("id-ID");
+  const historyItems = completedClaims
+    .filter((item: any) => String(item.tasks?.title || "").toLocaleLowerCase("id-ID").includes(normalizedQuery))
+    .sort((a: any, b: any) => {
+      const evaluatedTime = (item: any) =>
+        new Date(relationOne(item.task_evaluations)?.evaluated_at || item.submitted_at || 0).getTime() || 0;
+      const dateCompare = evaluatedTime(a) - evaluatedTime(b);
+      let compare = 0;
+      if (historySort.startsWith("employee")) {
+        compare = collator.compare(String(a.employees?.full_name || ""), String(b.employees?.full_name || ""));
+      } else if (historySort.startsWith("task")) {
+        compare = collator.compare(String(a.tasks?.title || ""), String(b.tasks?.title || ""));
+      } else {
+        compare = dateCompare;
+      }
+      if (historySort.endsWith("desc")) compare = -compare;
+      // Stable tie-break to avoid records jumping between pages.
+      return compare || -dateCompare || collator.compare(String(a.id), String(b.id));
+    });
   const historyPageSize = 10;
-  const historyTotalPages = Math.max(1, Math.ceil(completedClaims.length / historyPageSize));
+  const historyTotalPages = Math.max(1, Math.ceil(historyItems.length / historyPageSize));
   const historyPage = Number.isFinite(requestedPage) ? Math.min(Math.max(requestedPage, 1), historyTotalPages) : 1;
-  const historyRows = completedClaims.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
+  const historyRows = historyItems.slice((historyPage - 1) * historyPageSize, historyPage * historyPageSize);
+  const historyHref = (page: number) => {
+    const query = new URLSearchParams({ tab: "evaluation", page: String(page) });
+    if (historyQuery) query.set("q", historyQuery);
+    if (historySort !== "date_desc") query.set("sort", historySort);
+    return `/reviews?${query.toString()}`;
+  };
 
   return (
     <div style={{ height: "calc(100vh - 44px)", overflow: "hidden", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -284,6 +314,40 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             <span className="badge">{completedClaims.length} evaluasi</span>
           </div>
 
+          <form action="/reviews" method="get" role="search" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 9, flex: "0 0 auto" }}>
+            <input type="hidden" name="tab" value="evaluation" />
+            <input type="hidden" name="page" value="1" />
+            <input
+              type="search"
+              name="q"
+              aria-label="Cari berdasarkan judul task"
+              placeholder="Cari nama task..."
+              defaultValue={historyQuery}
+              maxLength={120}
+              style={{ flex: "1 1 225px", minWidth: 160, maxWidth: 380, minHeight: 36, border: "1px solid var(--line)", borderRadius: 9, padding: "7px 11px", font: "inherit", fontSize: 13 }}
+            />
+            <select
+              name="sort"
+              aria-label="Urutkan riwayat evaluasi"
+              defaultValue={historySort}
+              style={{ flex: "0 1 205px", minWidth: 185, minHeight: 36, border: "1px solid var(--line)", borderRadius: 9, padding: "6px 10px", font: "inherit", fontSize: 13, background: "#fff" }}
+            >
+              <option value="date_desc">Date · Terbaru</option>
+              <option value="date_asc">Date · Terlama</option>
+              <option value="employee_asc">Employee · A–Z</option>
+              <option value="employee_desc">Employee · Z–A</option>
+              <option value="task_asc">Task · A–Z</option>
+              <option value="task_desc">Task · Z–A</option>
+            </select>
+            <button className="btn secondary" type="submit" style={{ minHeight: 36 }}>Terapkan</button>
+            {historyQuery || historySort !== "date_desc" ? (
+              <Link className="btn secondary" href="/reviews?tab=evaluation&page=1" style={{ minHeight: 36, display: "inline-flex", alignItems: "center" }}>Reset</Link>
+            ) : null}
+            <span className="muted small" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
+              {historyItems.length} dari {completedClaims.length} evaluasi
+            </span>
+          </form>
+
           <div className="table-wrap" style={{ flex: "1 1 auto", minHeight: 0, overflow: "auto" }}>
             <table>
               <thead>
@@ -300,7 +364,11 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
                 </tr>
               </thead>
               <tbody>
-                {historyRows.map((item: any) => {
+                {historyRows.length === 0 ? (
+                  <tr><td colSpan={9} style={{ textAlign: "center", padding: "26px 12px" }} className="muted">
+                    Tidak ada task yang cocok dengan pencarian. Coba kata kunci lain atau pilih Reset.
+                  </td></tr>
+                ) : historyRows.map((item: any) => {
                   const itemEval = relationOne(item.task_evaluations);
                   const itemKpi = relationOne(item.tasks?.employee_kpis);
                   const canEdit = latestClaimIds.has(item.id);
@@ -334,9 +402,9 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, paddingTop: 10, flex: "0 0 auto" }}>
-            {historyPage > 1 ? <Link prefetch className="btn secondary" href={`/reviews?tab=evaluation&page=${historyPage - 1}`}>← Sebelumnya</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
+            {historyPage > 1 ? <Link prefetch className="btn secondary" href={historyHref(historyPage - 1)}>← Sebelumnya</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>← Sebelumnya</span>}
             <span className="badge">{historyPage} / {historyTotalPages}</span>
-            {historyPage < historyTotalPages ? <Link prefetch className="btn secondary" href={`/reviews?tab=evaluation&page=${historyPage + 1}`}>Berikutnya →</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
+            {historyPage < historyTotalPages ? <Link prefetch className="btn secondary" href={historyHref(historyPage + 1)}>Berikutnya →</Link> : <span className="btn secondary" style={{ opacity: .4, cursor: "default" }}>Berikutnya →</span>}
           </div>
         </section>
       )}
