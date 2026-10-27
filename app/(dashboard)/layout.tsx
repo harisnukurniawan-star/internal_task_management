@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { WeeklyFeedbackGate } from "@/components/weekly-feedback-gate";
 import { requireProfile } from "@/lib/auth";
+import { getPendingWeeklyFeedback } from "@/lib/weekly-feedback";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { supabase, profile } = await requireProfile();
@@ -8,6 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let validationCount = 0;
   let assignmentCount = 0;
+  let pendingFeedbackWeek: string | null = null;
 
   if (supervisor) {
     const { count } = await supabase
@@ -30,14 +32,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
         .eq("assigned_to", employee.id)
         .eq("status", "assigned");
       assignmentCount = count ?? 0;
+      // Query only the employee's own submitted claims and feedback (RLS scoped).
+      // The Monday–Wednesday catch-up has priority over Wednesday's new week.
+      try {
+        pendingFeedbackWeek = await getPendingWeeklyFeedback(supabase, employee.id);
+      } catch {
+        // Do not lock the entire application on a temporary database failure.
+        // The staff feedback page reports retrieval failures explicitly.
+      }
     }
   }
-
-  const jakartaNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
-  const jakartaWeekday = jakartaNow.getUTCDay();
-  const feedbackDay = jakartaWeekday === 4 || jakartaWeekday === 5;
-  jakartaNow.setUTCDate(jakartaNow.getUTCDate() - ((jakartaWeekday + 6) % 7));
-  const weekStart = jakartaNow.toISOString().slice(0, 10);
 
   return (
     <AppShell
@@ -47,7 +51,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       assignmentCount={assignmentCount}
     >
       {children}
-      {!supervisor && feedbackDay ? <WeeklyFeedbackGate weekStart={weekStart} /> : null}
+      {!supervisor && pendingFeedbackWeek ? <WeeklyFeedbackGate weekStart={pendingFeedbackWeek} /> : null}
     </AppShell>
   );
 }
