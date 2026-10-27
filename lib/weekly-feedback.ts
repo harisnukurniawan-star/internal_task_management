@@ -48,7 +48,7 @@ export async function getPendingWeeklyFeedback(
     if (completed.has(monday)) continue;
     const { start, end } = weekRangeUTC(monday);
     const { data: claims, error: claimsError } = await supabase.from("task_claims")
-      .select("id").eq("employee_id", employeeId)
+      .select("id,evidence_files!inner(id)").eq("employee_id", employeeId)
       .gte("submitted_at", start).lt("submitted_at", end).limit(1);
     if (claimsError) throw claimsError;
     if (claims?.length) return monday;
