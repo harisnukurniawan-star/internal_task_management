@@ -109,7 +109,12 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
   const collator = new Intl.Collator("id-ID", { sensitivity: "base", numeric: true });
   const normalizedQuery = historyQuery.toLocaleLowerCase("id-ID");
   const historyItems = completedClaims
-    .filter((item: any) => String(item.tasks?.title || "").toLocaleLowerCase("id-ID").includes(normalizedQuery))
+    .filter((item: any) => {
+      const itemKpi = relationOne(item.tasks?.employee_kpis);
+      return [item.tasks?.title, itemKpi?.kpi_code, itemKpi?.kpi_description].some((value) =>
+        String(value || "").toLocaleLowerCase("id-ID").includes(normalizedQuery),
+      );
+    })
     .sort((a: any, b: any) => {
       const evaluatedTime = (item: any) =>
         new Date(relationOne(item.task_evaluations)?.evaluated_at || item.submitted_at || 0).getTime() || 0;
@@ -320,8 +325,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
             <input
               type="search"
               name="q"
-              aria-label="Cari berdasarkan judul task"
-              placeholder="Cari nama task..."
+              aria-label="Cari berdasarkan nama task, kode atau deskripsi Support KPI"
+              placeholder="Cari task atau Support KPI..."
               defaultValue={historyQuery}
               maxLength={120}
               style={{ flex: "1 1 225px", minWidth: 160, maxWidth: 380, minHeight: 36, border: "1px solid var(--line)", borderRadius: 9, padding: "7px 11px", font: "inherit", fontSize: 13 }}
@@ -366,7 +371,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams: Prom
               <tbody>
                 {historyRows.length === 0 ? (
                   <tr><td colSpan={9} style={{ textAlign: "center", padding: "26px 12px" }} className="muted">
-                    Tidak ada task yang cocok dengan pencarian. Coba kata kunci lain atau pilih Reset.
+                    Tidak ada task atau Support KPI yang cocok dengan pencarian. Coba kata kunci lain atau pilih Reset.
                   </td></tr>
                 ) : historyRows.map((item: any) => {
                   const itemEval = relationOne(item.task_evaluations);
