@@ -50,6 +50,11 @@ function formatPercent(value: number | null) {
   return formatted === "-" ? "-" : `${formatted}%`;
 }
 
+function formatWorkdays(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return "-";
+  return `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(value)} hari`;
+}
+
 type ApprovedMetric = {
   deadlineDate: string;
   score: number;
@@ -261,7 +266,7 @@ export default async function ManageGoalsPMGMPage({
     return values.reduce((sum, value) => sum + value, 0) / values.length;
   }
 
-  function timeTotals(kpiId: string) {
+  function timeAverages(kpiId: string) {
     const rows = approvedMetricsByKpi.get(kpiId) ?? [];
     const eligible = rows.filter((item) => {
       const [yearText, monthText] = item.deadlineDate.split("-");
@@ -269,10 +274,11 @@ export default async function ManageGoalsPMGMPage({
         && isTrackingMonth(Number(yearText), Number(monthText));
     });
 
-    if (eligible.length === 0) return { targetDays: null, realizationDays: null };
+    // Target selalu satu minggu kerja (5 hari), termasuk KPI tanpa task Approved.
+    if (eligible.length === 0) return { targetDays: 5, realizationDays: null };
     return {
-      targetDays: eligible.length * 5,
-      realizationDays: eligible.reduce((sum, item) => sum + item.workdaysUsed, 0),
+      targetDays: 5,
+      realizationDays: eligible.reduce((sum, item) => sum + item.workdaysUsed, 0) / eligible.length,
     };
   }
   const baseEmployeeQuery = (employeeId: string) =>
@@ -424,7 +430,7 @@ export default async function ManageGoalsPMGMPage({
                 <th>Jumlah Target</th>
                 {months.map((month) => <th key={month}>{monthLabel(month)}</th>)}
                 <th>Pengisian Kualitas</th>
-                <th>Pengisian Waktu</th>
+                <th title="Target 5 hari kerja (Senin-Jumat); realisasi adalah rata-rata hari kerja per aktivitas Approved">Pengisian Waktu</th>
                 <th>Pengisian Target Kuantitas Range</th>
                 <th>Realisasi Range</th>
                 <th>IP</th>
@@ -470,11 +476,11 @@ export default async function ManageGoalsPMGMPage({
                   </td>
                   <td>
                     {(() => {
-                      const timing = timeTotals(kpi.id);
+                      const timing = timeAverages(kpi.id);
                       return (
                         <div className="pmgm-month">
-                          <span><strong>T:</strong>{timing.targetDays == null ? "-" : `${timing.targetDays} hari`}</span>
-                          <span><strong>R:</strong>{timing.realizationDays == null ? "-" : `${timing.realizationDays} hari`}</span>
+                          <span><strong>T:</strong>{formatWorkdays(timing.targetDays)}</span>
+                          <span><strong>R:</strong>{formatWorkdays(timing.realizationDays)}</span>
                         </div>
                       );
                     })()}
