@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { InvitationPasswordRedirect } from "@/components/invitation-password-redirect";
 
 export const metadata: Metadata = {
   title: "Internal Task Management",
@@ -13,7 +14,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="id">
-      <body>{children}</body>
+      <body>
+        <InvitationPasswordRedirect />
+        {children}
+      </body>
     </html>
   );
 }

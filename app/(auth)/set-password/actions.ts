@@ -41,8 +41,25 @@ export async function setPassword(formData: FormData) {
       .maybeSingle();
 
     if (!profile?.active) {
+      const { data: pmAccess, error: pmAccessError } = await supabase
+        .from("project_manager_access")
+        .select("user_id")
+        .eq("user_id", userId)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (pmAccessError || !pmAccess) {
+        await supabase.auth.signOut();
+        redirect(`/set-password?error=${encodeURIComponent("Akun belum aktif atau tidak memiliki hak akses aplikasi. Hubungi administrator.")}`);
+      }
+
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) {
+        redirect(`/set-password?error=${encodeURIComponent("Password gagal diperbarui. Silakan coba lagi.")}`);
+      }
+
       await supabase.auth.signOut();
-      redirect(`/set-password?error=${encodeURIComponent("Akun belum aktif. Gunakan menu Aktivasi akun dari halaman Login.")}`);
+      redirect(`/login?message=${encodeURIComponent("Password berhasil dibuat. Gunakan email dan password yang sama untuk masuk ke Project Manager HCBP.")}`);
     }
   }
 
