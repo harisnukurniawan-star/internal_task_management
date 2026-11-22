@@ -4,28 +4,28 @@ import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Supabase dashboard invitations can return to the configured Site URL with
- * credentials in the URL fragment. The fragment is not visible to Server
- * Components, so capture it globally before the normal dashboard route runs.
- *
- * Pending Internal Task Management activations and active PM-only identities
- * are sent to the existing shared set-password screen. PM-only users are not
- * granted an Internal Task Management profile by this bridge.
+ * Supabase Auth may return invite/recovery tokens to the configured Site URL
+ * (often /dashboard) in the URL fragment. Capture them before dashboard use.
+ * Recovery links always open the shared password form. Invite links open it
+ * for pending ITM activation or PM-only identities without creating an ITM
+ * profile or granting ITM access.
  */
 export function InvitationPasswordRedirect() {
   useEffect(() => {
     let cancelled = false;
 
-    async function handleInvitation() {
+    async function handleEmailAuthReturn() {
       const url = new URL(window.location.href);
       const fragment = new URLSearchParams(url.hash.replace(/^#/, ""));
       const accessToken = fragment.get("access_token");
       const refreshToken = fragment.get("refresh_token");
       const tokenType = fragment.get("type");
 
-      if (!accessToken || !refreshToken || (tokenType && tokenType !== "invite" && tokenType !== "recovery" && tokenType !== "signup")) {
-        return;
-      }
+      if (!accessToken || !refreshToken) return;
+
+      const isRecovery = tokenType === "recovery";
+      const isInvite = tokenType === "invite" || tokenType === "signup";
+      if (!isRecovery && !isInvite) return;
 
       const supabase = createClient();
       const { data, error } = await supabase.auth.setSession({
@@ -34,6 +34,13 @@ export function InvitationPasswordRedirect() {
       });
 
       if (cancelled || error || !data.user) return;
+
+      // Password recovery must always land on the password form, including
+      // when Supabase's Site URL sent the email link to /dashboard.
+      if (isRecovery) {
+        window.location.replace("/set-password");
+        return;
+      }
 
       const { data: activationState, error: activationError } = await supabase.rpc(
         "get_my_activation_state",
@@ -46,8 +53,6 @@ export function InvitationPasswordRedirect() {
         return;
       }
 
-      // PM identities use the same Supabase Auth password as Internal Task
-      // Management, but their application authorization remains PM-scoped.
       const { data: pmAccess, error: pmAccessError } = await supabase
         .from("project_manager_access")
         .select("user_id")
@@ -62,11 +67,11 @@ export function InvitationPasswordRedirect() {
         return;
       }
 
-      // Do not leave invitation credentials in the address bar.
+      // Avoid leaving credentials in the address bar for unrelated accounts.
       window.history.replaceState({}, "", url.pathname + url.search);
     }
 
-    void handleInvitation();
+    void handleEmailAuthReturn();
     return () => {
       cancelled = true;
     };
